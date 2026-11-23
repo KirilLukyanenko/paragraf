@@ -38,6 +38,7 @@ public sealed record QuestionResult
     public IReadOnlyList<string> CitationProblems { get; init; } = [];
     public double? CitationRecall { get; init; }
     public bool? Grounded { get; init; }
+    public IReadOnlyList<string> ToolsCalled { get; init; } = [];
     public int? PointsMet { get; init; }
     public int? Points { get; init; }
     public IReadOnlyList<string> ContradictedClaims { get; init; } = [];
@@ -75,7 +76,7 @@ public sealed record RunSummary
 
 public sealed record CategorySummary(int Questions, double? RetrievalRecall, double? StatusAccuracy, double? PointsMetRate, double? GroundedRate);
 
-public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClient chat)
+public sealed class EvalRunner(Retriever retriever, Answerer answerer, LawLibrary library, IChatClient chat)
 {
     public static readonly JsonSerializerOptions Json = new()
     {
@@ -122,7 +123,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
             };
             if (options.RetrievalOnly) return baseResult;
 
-            var answer = await answerer.AnswerAsync(q.Question, options.AsOf, retrieval, options.Settings.Answer, ct);
+            var tools = options.Settings.Answer.Tools ? new Paragraf.Rag.Payroll.LabourTools(library, null, options.AsOf) : null;
+            var answer = await answerer.AnswerAsync(q.Question, options.AsOf, retrieval, options.Settings.Answer, tools, ct);
             cost += answer.CostUsd;
             var citedArticles = answer.Citations.Where(c => c.Verified)
                 .Select(c => UnitNumber.TryParse(c.Citation.Article, out var n) ? n.ToString() : "").ToHashSet();
@@ -137,6 +139,7 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
                 CitationProblems = answer.Citations.Where(c => !c.Verified).Select(c => $"{c.Display ?? c.Citation.Article}: {c.Problem}").ToList(),
                 CitationRecall = expected.Count == 0 ? null : expected.Count(citedArticles.Contains) / (double)expected.Count,
                 Grounded = answer.Grounded,
+                ToolsCalled = answer.ToolCalls.Select(c => c.Name).ToList(),
                 PointsMet = verdict?.Points.Count(p => p.Met),
                 Points = verdict is null ? null : q.AnswerPoints.Count,
                 ContradictedClaims = verdict?.ContradictedClaims ?? [],
@@ -195,7 +198,7 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
 
     public static string Describe(EvalOptions o) => o.RetrievalOnly
         ? $"retrieval {o.Settings.Retrieval.Describe()}, rewrite {o.Settings.RewriteModel}, embeddings {o.Settings.EmbeddingModel}"
-        : $"retrieval {o.Settings.Retrieval.Describe()}, answer {o.Settings.Answer.Model} effort {o.Settings.Answer.Effort}, judge {o.JudgeModel}";
+        : $"retrieval {o.Settings.Retrieval.Describe()}, answer {o.Settings.Answer.Model} effort {o.Settings.Answer.Effort}{(o.Settings.Answer.Tools ? " with tools" : "")}, judge {o.JudgeModel}";
 
     private static double? Avg(IEnumerable<double> values)
     {

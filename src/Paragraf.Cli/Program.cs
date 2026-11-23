@@ -45,6 +45,14 @@ switch (command)
         {
             Console.WriteLine($"  {(c.Verified ? "OK" : "!! " + c.Problem)} {c.Display ?? c.Citation.Article}: „{c.Citation.Quote}”");
         }
+        foreach (var call in answer.ToolCalls)
+        {
+            Console.WriteLine($"  tool {call.Name}{(call.Failed ? " FAILED" : "")} #{call.Iteration} {call.CallId} {call.Arguments.GetRawText()}");
+        }
+        foreach (var a in answer.Amounts)
+        {
+            Console.WriteLine($"  {(a.Verified ? "OK" : "!! not from a tool or the question")} amount {a.Text}");
+        }
         Console.WriteLine();
         Console.WriteLine($"sources: {string.Join(", ", answer.Retrieval.Articles.Select(a => "art. " + a.Article.Number.ToDisplay()))}");
         if (answer.Retrieval.Rewrite is { } rw) Console.WriteLine($"search query: {rw.PolishQuery} [{string.Join(", ", rw.Keywords)}]");
@@ -96,16 +104,48 @@ switch (command)
         foreach (var f in failures) Console.Error.WriteLine($"GATE FAILED: {f}");
         return failures.Count == 0 ? 0 : 2;
     }
+    case "seed-payroll":
+    {
+        // Creates a tenant in comp-ledger and uploads the demo employees, for the payroll tools and their eval.
+        var url = new Uri(options.Positional.FirstOrDefault() ?? "http://127.0.0.1:8090");
+        var data = LawLibrary.FindDataDirectory(AppContext.BaseDirectory, Environment.CurrentDirectory);
+        var csv = await File.ReadAllTextAsync(Path.Combine(Directory.GetParent(data)!.FullName, "evals", "payroll", "employees.csv"), cts.Token);
+        var tenant = await PayrollSeed.SeedAsync(url, csv, cts.Token);
+        Console.WriteLine($"tenant {tenant}; set CompLedger__Endpoint={new Uri(url, "/mcp")} and CompLedger__TenantId={tenant}");
+        return 0;
+    }
+    case "eval-payroll":
+    {
+        var engine = services.GetRequiredService<ParagrafEngine>();
+        if (!engine.HasPayroll) throw new InvalidOperationException("Set CompLedger:Endpoint and CompLedger:TenantId (see seed-payroll).");
+        var data = LawLibrary.FindDataDirectory(AppContext.BaseDirectory, Environment.CurrentDirectory);
+        var repo = Directory.GetParent(data)!.FullName;
+        IReadOnlyList<PayrollQuestion> questions = PayrollQuestion.Load(Path.Combine(repo, "evals", "payroll", "questions.jsonl"));
+        if (options.Ids.Count > 0) questions = questions.Where(q => options.Ids.Contains(q.Id)).ToList();
+        var settings = options.Apply(engine.Defaults);
+        var name = "payroll-" + (options.Name ?? $"{DateTime.UtcNow:yyyyMMdd-HHmm}");
+        Console.WriteLine($"{questions.Count} payroll questions, {settings.Answer.Model}");
+        // The law as of the date the eval set was written: amounts and dates in it are fixed.
+        var asOf = options.AsOfGiven ? options.AsOf : new DateOnly(2026, 11, 23);
+        var (summary, results) = await PayrollEval.RunAsync(engine, questions, settings, asOf, name, options.Parallelism ?? 4, Console.WriteLine, cts.Token);
+        await PayrollEval.WriteAsync(Path.Combine(repo, "evals", "runs"), summary, results);
+        Console.WriteLine();
+        Console.WriteLine(PayrollEval.Markdown(summary, results).Split("## Answers")[0]);
+        Console.WriteLine($"written to evals/runs/{name}.json and .md");
+        return options.MinCorrect is { } min && summary.Correct < min ? 2 : 0;
+    }
     default:
         Console.WriteLine("""
             paragraf ingest                         embed the Labour Code and load it into PostgreSQL
             paragraf ask "question" [options]       answer one question
             paragraf eval [options]                 run the eval set (evals/questions.jsonl)
+            paragraf seed-payroll [comp-ledger url] create a comp-ledger tenant with the demo employees
+            paragraf eval-payroll [options]         run the calculation eval set (evals/payroll/questions.jsonl)
 
             options: --as-of yyyy-MM-dd  --model M  --effort low|medium|high  --articles K  --lexical-weight W
-                     --no-vector --no-lexical --no-named --no-rewrite
+                     --no-vector --no-lexical --no-named --no-rewrite --no-tools
                      eval: --retrieval-only --name N --sample N --ids q001,q002 --category lookup --judge M --parallel N
-                           gates (exit 2 below): --min-recall F --min-status F --min-grounded F
+                           gates (exit 2 below): --min-recall F --min-status F --min-grounded F; eval-payroll: --min-correct F
             """);
         return command == "help" ? 0 : 1;
 }
@@ -114,6 +154,9 @@ internal sealed class Options
 {
     public List<string> Positional { get; } = [];
     public DateOnly AsOf { get; private set; } = DateOnly.FromDateTime(DateTime.Today);
+    public bool AsOfGiven { get; private set; }
+    public bool NoTools { get; private set; }
+    public double? MinCorrect { get; private set; }
     public string? Model { get; private set; }
     public ReasoningEffort? Effort { get; private set; }
     public int? Articles { get; private set; }
@@ -143,7 +186,9 @@ internal sealed class Options
             string Next() => i + 1 < args.Length ? args[++i] : throw new ArgumentException($"{args[i]} needs a value");
             switch (args[i])
             {
-                case "--as-of": o.AsOf = DateOnly.Parse(Next()); break;
+                case "--as-of": o.AsOf = DateOnly.Parse(Next()); o.AsOfGiven = true; break;
+                case "--no-tools": o.NoTools = true; break;
+                case "--min-correct": o.MinCorrect = Fraction(Next()); break;
                 case "--model": o.Model = Next(); break;
                 case "--effort":
                     o.Effort = Next() switch
@@ -191,6 +236,7 @@ internal sealed class Options
         {
             Model = Model ?? s.Answer.Model,
             Effort = Effort ?? s.Answer.Effort,
+            Tools = s.Answer.Tools && !NoTools,
         },
     };
 }

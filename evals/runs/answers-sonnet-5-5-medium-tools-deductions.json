@@ -1,0 +1,110 @@
+{
+  "summary": {
+    "name": "answers-sonnet-5-5-medium-tools-deductions",
+    "configuration": "retrieval vector+bm25x0.5+named+rewrite/k8, answer claude-sonnet-5-5 effort Medium with tools, judge claude-sonnet-5-5",
+    "at": "2026-11-23T22:35:28.5376922+00:00",
+    "questions": 2,
+    "retrieval_recall": 1,
+    "retrieval_all_found": 1,
+    "mrr": 0.75,
+    "status_accuracy": 1,
+    "citation_precision": 1,
+    "citation_recall": 1,
+    "grounded_rate": 1,
+    "points_met_rate": 1,
+    "answers_contradicting_sources": 0,
+    "answers_with_outside_claims": 0,
+    "cost_usd": 0.1050,
+    "cost_per_question_usd": 0.0525,
+    "latency_p50_ms": 9898.472600000001,
+    "latency_p95_ms": 12033.0206,
+    "errors": 0,
+    "by_category": {
+      "numeric": {
+        "questions": 2,
+        "retrieval_recall": 1,
+        "status_accuracy": 1,
+        "points_met_rate": 1,
+        "grounded_rate": 1
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "q067",
+      "category": "numeric",
+      "lang": "pl",
+      "expected": [
+        "108"
+      ],
+      "retrieved": [
+        "108",
+        "87",
+        "87^1",
+        "85",
+        "297",
+        "129",
+        "91",
+        "81"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "status": "Answered",
+      "status_ok": true,
+      "citations": 1,
+      "verified_citations": 1,
+      "citation_problems": [],
+      "citation_recall": 1,
+      "grounded": true,
+      "tools_called": [
+        "deduction_limits"
+      ],
+      "points_met": 3,
+      "points": 3,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "answer": "Łącznie kary pieniężne mogą wynieść maksymalnie 400 zł. Jest to jedna dziesiąta wynagrodzenia przypadającego do wypłaty po potrąceniach z art. 87 § 1 pkt 1–3, czyli 4000 zł ÷ 10 (art. 108 § 3).\n\nZałożyłem, że 4000 zł to kwota po potrąceniu składek, zaliczki na podatek, PPK i egzekucji komorniczej, a także ewentualnych zaliczek pieniężnych.\n\nPojedyncza kara nie może przekraczać jednodniowego wynagrodzenia (art. 108 § 3). Kwot wolnych od potrąceń z art. 87¹ nie uwzględniałem. Zależą od minimalnego wynagrodzenia, które ustala się poza kodeksem.",
+      "cost_usd": 0.0540365,
+      "retrieval_ms": 3006.222,
+      "generation_ms": 6892.2506
+    },
+    {
+      "id": "q068",
+      "category": "numeric",
+      "lang": "en",
+      "expected": [
+        "87"
+      ],
+      "retrieved": [
+        "88",
+        "87",
+        "87^1",
+        "282",
+        "77^5",
+        "91",
+        "90",
+        "297"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "status": "Answered",
+      "status_ok": true,
+      "citations": 4,
+      "verified_citations": 4,
+      "citation_problems": [],
+      "citation_recall": 1,
+      "grounded": true,
+      "tools_called": [
+        "deduction_limits"
+      ],
+      "points_met": 2,
+      "points": 2,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "answer": "The most that can be deducted for child support enforced by a bailiff is 3 600,00 zł a month. That is three fifths of your 6 000 zł net pay (art. 87 § 3 pkt 1). The net pay is after social insurance, the income tax advance and PPK contributions (art. 87 § 1).\n\nThis cap applies to alimony. The separate cap for other enforcement or advances is half of pay, which is 3 000,00 zł. Together, all deductions of these kinds cannot go above three fifths, so 3 600,00 zł (art. 87 § 4).\n\nThe amount that is free from deduction (art. 87¹) is not applied here. It depends on the minimum wage, which is set outside the code. Art. 87¹ § 1 pkt 1 applies it only to non-alimony enforcement, so it does not reduce the alimony deduction. This is general information, not advice for your case.",
+      "cost_usd": 0.0509678,
+      "retrieval_ms": 3006.2269,
+      "generation_ms": 9026.7937
+    }
+  ]
+}

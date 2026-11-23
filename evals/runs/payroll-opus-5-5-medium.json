@@ -1,0 +1,260 @@
+{
+  "summary": {
+    "name": "payroll-opus-5-5-medium",
+    "model": "claude-opus-5-5",
+    "questions": 12,
+    "correct": 1,
+    "tools_correct": 1,
+    "amounts_correct": 1,
+    "amounts_grounded": 1,
+    "citations_verified": 1,
+    "articles_cited": 1,
+    "cost_usd": 1.1704633,
+    "cost_per_question": 0.0975386083333333333333333333,
+    "p50_seconds": 15.0121066,
+    "errors": 0
+  },
+  "results": [
+    {
+      "id": "p01",
+      "category": "calculation",
+      "question": "Ile wyniesie wynagrodzenie za nadgodziny pracownika E-1001 w marcu 2026: 10 godzin w zwyk\u0142e dni robocze i 4 godziny w niedziel\u0119, kt\u00F3ra nie by\u0142a dla niego dniem pracy?",
+      "status": "Answered",
+      "answer": "Za nadgodziny w marcu 2026 r. pracownikowi E-1001 nale\u017Cy si\u0119 \u0142\u0105cznie 1 840,00 z\u0142. Na t\u0119 kwot\u0119 sk\u0142ada si\u0119 normalne wynagrodzenie za nadgodziny i dodatek, kt\u00F3ry przys\u0142uguje opr\u00F3cz niego (art. 151\u00B9 \u00A7 1).\n\nObliczenie (wynik narz\u0119dzia p\u0142acowego):\n- Wynagrodzenie zasadnicze z systemu kadrowo-p\u0142acowego na dzie\u0144 2026-03-31 wynosi 14 080,00 z\u0142 miesi\u0119cznie.\n- Wymiar czasu pracy w marcu 2026 r. to 176 godzin (art. 130 \u00A7 1\u20132).\n- Stawka godzinowa: 14 080,00 z\u0142 / 176 godz. = 80,00 z\u0142.\n- Normalne wynagrodzenie za 14 nadgodzin (10 \u002B 4) to 1 120,00 z\u0142.\n- Dodatek 50% za 10 godzin w zwyk\u0142e dni robocze to 400,00 z\u0142 (art. 151\u00B9 \u00A7 1 pkt 2).\n- Dodatek 100% za 4 godziny w niedziel\u0119, kt\u00F3ra nie by\u0142a dla pracownika dniem pracy, to 320,00 z\u0142 (art. 151\u00B9 \u00A7 1 pkt 1 lit. b).\n- Razem: 1 840,00 z\u0142.\n\nZa\u0142o\u017Cenia, kt\u00F3re maj\u0105 znaczenie:\n- Podstaw\u0105 dodatku jest wynagrodzenie zasadnicze, czyli wynagrodzenie z osobistego zaszeregowania. Inne sk\u0142adniki, np. dodatki, nie s\u0105 wliczane (art. 151\u00B9 \u00A7 3).\n- Stawk\u0119 godzinow\u0105 liczy si\u0119, dziel\u0105c pensj\u0119 miesi\u0119czn\u0105 przez wymiar czasu pracy w danym miesi\u0105cu. Ta metoda wynika z rozporz\u0105dzenia p\u0142acowego, a nie z samego Kodeksu pracy.\n- Je\u015Bli pracodawca udzieli czasu wolnego w zamian za nadgodziny, dodatek nie przys\u0142uguje (art. 151\u00B2 \u00A7 3).\n- Kwota jest kwot\u0105 brutto. Udost\u0119pnione przepisy nie okre\u015Blaj\u0105 podatku ani sk\u0142adek.",
+      "tools_called": [
+        "overtime_pay"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0957619,
+      "seconds": 19.0421737,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p02",
+      "category": "calculation",
+      "question": "E-1001 worked 6 overtime hours on ordinary weekdays in November 2026. How much is the pay for that overtime?",
+      "status": "Answered",
+      "answer": "Pay for E-1001\u0027s 6 overtime hours on ordinary weekdays in November 2026 comes to 843.75 PLN. That is the normal pay for the hours plus a 50% allowance (art. 151\u00B9 \u00A7 1 pkt 2).\n\nHow the payroll tool worked it out:\n1. Monthly base salary from the payroll system: 15000.00 PLN (as of 2026-11-30).\n2. Working-time norm for November 2026: 160 hours (art. 130 \u00A7 1\u20132).\n3. Hourly rate: 93.75 PLN.\n4. Normal pay for 6 hours: 562.50 PLN.\n5. 50% allowance for 6 hours: 281.25 PLN.\n6. Total: 843.75 PLN.\n\nAssumptions that matter:\n- The allowance is based only on the base salary, the employee\u0027s personal grade (art. 151\u00B9 \u00A7 3). Other pay components are not included.\n- The tool turns the monthly salary into an hourly rate using a method from a pay regulation, not from the Labour Code.\n- If the overtime is given back as time off instead of pay, no allowance is due (art. 151\u00B2 \u00A7 3).\n- If any of these hours fell at night, the allowance would be 100% instead (art. 151\u00B9 \u00A7 1 pkt 1).",
+      "tools_called": [
+        "overtime_pay"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.097623,
+      "seconds": 16.1504616,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p03",
+      "category": "calculation",
+      "question": "Pracodawca wypowiada umow\u0119 na czas nieokre\u015Blony pracownikowi E-1002 w dniu 25 listopada 2026. Jaki jest okres wypowiedzenia i kiedy si\u0119 ko\u0144czy?",
+      "status": "Answered",
+      "answer": "Okres wypowiedzenia wynosi 2 tygodnie i ko\u0144czy si\u0119 w sobot\u0119 12 grudnia 2026 r. (2026-12-12). Umowa rozwi\u0105zuje si\u0119 z tym dniem (art. 32 \u00A7 2).\n\nJak to wyliczono:\n1) D\u0142ugo\u015B\u0107 okresu zale\u017Cy od sta\u017Cu pracy u danego pracodawcy (art. 36 \u00A7 1). Wed\u0142ug systemu kadrowo-p\u0142acowego E-1002 pracuje od 15 czerwca 2026 r. W dniu wypowiedzenia, 25 listopada 2026 r., ma wi\u0119c 5 miesi\u0119cy sta\u017Cu, czyli mniej ni\u017C 6 miesi\u0119cy. Dlatego okres wypowiedzenia wynosi 2 tygodnie (art. 36 \u00A7 1 pkt 1).\n2) Okres liczony w tygodniach ko\u0144czy si\u0119 w sobot\u0119 (art. 30 \u00A7 2\u00B9). Narz\u0119dzie przyj\u0119\u0142o, \u017Ce okres zaczyna biec w niedziel\u0119 po dniu wypowiedzenia, czyli 29 listopada 2026 r. Dwa tygodnie ko\u0144cz\u0105 si\u0119 wi\u0119c w sobot\u0119 12 grudnia 2026 r.\n\nZa\u0142o\u017Cenia i zastrze\u017Cenia:\n- Dat\u0119 rozpocz\u0119cia pracy wzi\u0119to z pierwszego wpisu p\u0142acowego w systemie. Do sta\u017Cu wlicza si\u0119 te\u017C prac\u0119 u poprzedniego pracodawcy, je\u015Bli zmiana pracodawcy nast\u0105pi\u0142a na zasadach art. 23\u00B9 lub gdy nowy pracodawca jest nast\u0119pc\u0105 prawnym poprzedniego (art. 36 \u00A7 1\u00B9). Wtedy okres wypowiedzenia m\u00F3g\u0142by by\u0107 d\u0142u\u017Cszy.\n- Sta\u017C liczono na dzie\u0144 z\u0142o\u017Cenia wypowiedzenia. Podane przepisy nie rozstrzygaj\u0105, czy ma znaczenie to, \u017Ce pracownik osi\u0105gnie 6 miesi\u0119cy sta\u017Cu (15 grudnia) dopiero w trakcie wypowiedzenia.\n- Strony mog\u0105 um\u00F3wi\u0107 si\u0119 na d\u0142u\u017Cszy okres wypowiedzenia na stanowisku z odpowiedzialno\u015Bci\u0105 materialn\u0105 za powierzone mienie (art. 36 \u00A7 5). Wtedy przy sta\u017Cu poni\u017Cej 6 miesi\u0119cy wynosi\u0142by on 1 miesi\u0105c.\n- Po z\u0142o\u017Ceniu wypowiedzenia strony mog\u0105 ustali\u0107 wcze\u015Bniejszy termin rozwi\u0105zania umowy (art. 36 \u00A7 6).\n- Je\u015Bli pracodawca zastosuje okres kr\u00F3tszy ni\u017C wymagany, umowa rozwi\u0105\u017Ce si\u0119 dopiero z up\u0142ywem okresu wymaganego, a pracownikowi nale\u017Cy si\u0119 wynagrodzenie do tego dnia (art. 49).\n- Wypowiedzenie powinno mie\u0107 form\u0119 pisemn\u0105 (art. 30 \u00A7 3). Powinno te\u017C podawa\u0107 przyczyn\u0119 (art. 30 \u00A7 4) i poucza\u0107 o prawie odwo\u0142ania do s\u0105du pracy (art. 30 \u00A7 5).",
+      "tools_called": [
+        "notice_period"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.1161177,
+      "seconds": 23.5175224,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p04",
+      "category": "calculation",
+      "question": "We are giving notice to E-1003 on 10 December 2026 (indefinite-term contract). What notice period applies, and on what day does it end?",
+      "status": "Answered",
+      "answer": "For E-1003 the notice period is 3 months, and it ends on 2027-03-31 (31 March 2027).\n\n1. Length of notice: For an indefinite-term contract, the notice period depends on how long the person has worked for this employer. It is 3 months once that is at least 3 years (art. 36 \u00A7 1 pt 3). The payroll system shows E-1003 starting on 2019-09-01. On 10 December 2026 that gives 7 years and 3 months, so the 3-month period applies.\n\n2. End date: A notice period counted in months ends on the last day of a month (art. 30 \u00A7 2\u00B9). The contract ends when the notice period runs out (art. 32 \u00A7 2). The calculation counts the period from 1 January 2027 to 31 March 2027. The sources only say the period ends on the last day of a month. They don\u0027t set out the rest of how the period is counted.\n\nAssumptions behind the calculation:\n- The start date is taken from E-1003\u0027s first pay record. Please check it against the employment records.\n- Only time with your company was counted. Under art. 36 \u00A7 1\u00B9, time with a previous employer also counts if the employee was taken over under art. 23\u00B9 or you are that employer\u0027s legal successor. This can\u0027t change the result here, because E-1003 already qualifies for the longest period.\n\nOther options:\n- After notice is given, the two sides can agree on an earlier end date. The contract still counts as ended by notice (art. 36 \u00A7 6).\n- If the notice is given because of the employer\u0027s bankruptcy or liquidation, or for other reasons not concerning employees, you may shorten the 3-month period to no less than 1 month. You then owe compensation equal to pay for the remaining part of the notice period (art. 36\u00B9 \u00A7 1).\n- If you apply a shorter notice period than required, the contract still ends when the required period runs out, and the employee is paid until then (art. 49).\n\nFormal requirements for the notice:\n- It must be in writing (art. 30 \u00A7 3).\n- It must state the reason for the notice (art. 30 \u00A7 4).\n- It must tell the employee they have the right to appeal to the labour court (art. 30 \u00A7 5).",
+      "tools_called": [
+        "notice_period"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.1238254,
+      "seconds": 20.8757044,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p05",
+      "category": "calculation",
+      "question": "Pracownik E-1003 ko\u0144czy prac\u0119 31 grudnia 2026 i podpisa\u0142 umow\u0119 o zakazie konkurencji na 12 miesi\u0119cy po ustaniu stosunku pracy. Jakie jest minimalne odszkodowanie?",
+      "status": "Answered",
+      "answer": "Minimalne odszkodowanie dla pracownika E-1003 za 12-miesi\u0119czny zakaz konkurencji wynosi 66 000,00 z\u0142, czyli 5 500,00 z\u0142 miesi\u0119cznie.\n\nPodstawa prawna: odszkodowanie nie mo\u017Ce by\u0107 ni\u017Csze ni\u017C 25% wynagrodzenia, kt\u00F3re pracownik otrzymywa\u0142 przed ustaniem stosunku pracy. Liczy si\u0119 je za okres r\u00F3wny czasowi trwania zakazu (art. 101\u00B2 \u00A7 3).\n\nObliczenie:\n- Wynagrodzenie miesi\u0119czne wed\u0142ug systemu p\u0142acowego na 31.12.2026 r. wynosi 22 000,00 z\u0142. Sk\u0142ada si\u0119 na nie roczne wynagrodzenie zasadnicze 240 000,00 z\u0142 i roczny dodatek 24 000,00 z\u0142, podzielone przez 12.\n- 25% tej kwoty to 5 500,00 z\u0142 miesi\u0119cznie.\n- Za 12 miesi\u0119cy daje to 66 000,00 z\u0142.\n\nWa\u017Cne uwagi:\n- To kwota minimalna. Strony mog\u0105 w umowie ustali\u0107 wy\u017Csze odszkodowanie (art. 101\u00B2 \u00A7 1).\n- Odszkodowanie mo\u017Cna wyp\u0142aca\u0107 w miesi\u0119cznych ratach (art. 101\u00B2 \u00A7 3).\n- Obliczenie przyjmuje, \u017Ce podstaw\u0105 jest sta\u0142e wynagrodzenie miesi\u0119czne, bez sk\u0142adnik\u00F3w zmiennych. Przepisy nie okre\u015Blaj\u0105 podstawy dok\u0142adniej. Je\u015Bli pracownik dostawa\u0142 te\u017C sk\u0142adniki zmienne, minimalna kwota mo\u017Ce by\u0107 inna.\n- Umowa o zakazie konkurencji musi mie\u0107 form\u0119 pisemn\u0105, inaczej jest niewa\u017Cna (art. 101\u00B3).\n- Zakaz przestaje obowi\u0105zywa\u0107 wcze\u015Bniej, je\u015Bli ustan\u0105 przyczyny, kt\u00F3re go uzasadnia\u0142y, albo je\u015Bli pracodawca nie wyp\u0142aca odszkodowania (art. 101\u00B2 \u00A7 2).\n- W razie sporu o odszkodowanie rozstrzyga s\u0105d pracy (art. 101\u00B2 \u00A7 3).",
+      "tools_called": [
+        "non_compete_compensation"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0786789,
+      "seconds": 13.5477013,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p06",
+      "category": "calculation",
+      "question": "\u0421\u043A\u0456\u043B\u044C\u043A\u0438 \u0433\u043E\u0434\u0438\u043D \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C \u043D\u043E\u0440\u043C\u0430 \u0440\u043E\u0431\u043E\u0447\u043E\u0433\u043E \u0447\u0430\u0441\u0443 \u043D\u0430 \u043F\u043E\u0432\u043D\u0443 \u0441\u0442\u0430\u0432\u043A\u0443 \u0432 \u0433\u0440\u0443\u0434\u043D\u0456 2026 \u0440\u043E\u043A\u0443?",
+      "status": "Answered",
+      "answer": "\u0423 \u0433\u0440\u0443\u0434\u043D\u0456 2026 \u0440\u043E\u043A\u0443 \u043D\u043E\u0440\u043C\u0430 \u0440\u043E\u0431\u043E\u0447\u043E\u0433\u043E \u0447\u0430\u0441\u0443 \u043D\u0430 \u043F\u043E\u0432\u043D\u0443 \u0441\u0442\u0430\u0432\u043A\u0443 \u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442\u044C 160 \u0433\u043E\u0434\u0438\u043D. \u0420\u043E\u0437\u0440\u0430\u0445\u0443\u043D\u043E\u043A \u0432\u0438\u0445\u043E\u0434\u0438\u0442\u044C \u0437 \u0442\u043E\u0433\u043E, \u0449\u043E \u0440\u043E\u0437\u0440\u0430\u0445\u0443\u043D\u043A\u043E\u0432\u0438\u0439 \u043F\u0435\u0440\u0456\u043E\u0434 \u0434\u043E\u0440\u0456\u0432\u043D\u044E\u0454 \u043A\u0430\u043B\u0435\u043D\u0434\u0430\u0440\u043D\u043E\u043C\u0443 \u043C\u0456\u0441\u044F\u0446\u044E.\n\n\u042F\u043A \u0440\u0430\u0445\u0443\u0432\u0430\u043B\u0438 (art. 130 \u00A7 1 \u0456 \u00A7 2):\n1) \u041F\u043E\u0432\u043D\u0456 \u0442\u0438\u0436\u043D\u0456: 4 \u00D7 40 \u0433\u043E\u0434 = 160 \u0433\u043E\u0434.\n2) \u0420\u043E\u0431\u043E\u0447\u0456 \u0434\u043D\u0456 \u0437 \u043F\u043E\u043D\u0435\u0434\u0456\u043B\u043A\u0430 \u043F\u043E \u043F\u2019\u044F\u0442\u043D\u0438\u0446\u044E, \u0449\u043E \u043B\u0438\u0448\u0430\u044E\u0442\u044C\u0441\u044F \u043F\u0456\u0441\u043B\u044F \u043F\u043E\u0432\u043D\u0438\u0445 \u0442\u0438\u0436\u043D\u0456\u0432: 3 \u00D7 8 \u0433\u043E\u0434 = 24 \u0433\u043E\u0434. \u0420\u0430\u0437\u043E\u043C 184 \u0433\u043E\u0434.\n3) \u0421\u0432\u044F\u0442\u0430, \u044F\u043A\u0456 \u043D\u0435 \u043F\u0440\u0438\u043F\u0430\u0434\u0430\u044E\u0442\u044C \u043D\u0430 \u043D\u0435\u0434\u0456\u043B\u044E: 24, 25 \u0456 26 \u0433\u0440\u0443\u0434\u043D\u044F 2026 \u0440\u043E\u043A\u0443. \u041A\u043E\u0436\u043D\u0435 \u0437 \u043D\u0438\u0445 \u0437\u043C\u0435\u043D\u0448\u0443\u0454 \u043D\u043E\u0440\u043C\u0443 \u043D\u0430 8 \u0433\u043E\u0434, \u0442\u043E\u0431\u0442\u043E 3 \u00D7 8 \u0433\u043E\u0434 = 24 \u0433\u043E\u0434. 26 \u0433\u0440\u0443\u0434\u043D\u044F \u2014 \u0441\u0443\u0431\u043E\u0442\u0430, \u0430\u043B\u0435 \u0446\u0435 \u0441\u0432\u044F\u0442\u043E \u0442\u0435\u0436 \u0437\u043C\u0435\u043D\u0448\u0443\u0454 \u043D\u043E\u0440\u043C\u0443, \u0431\u043E \u043F\u0440\u0438\u043F\u0430\u0434\u0430\u0454 \u043D\u0435 \u043D\u0430 \u043D\u0435\u0434\u0456\u043B\u044E (art. 130 \u00A7 2).\n4) 184 \u2212 24 = 160 \u0433\u043E\u0434.\n\n\u041F\u0440\u0438\u043F\u0443\u0449\u0435\u043D\u043D\u044F \u0440\u043E\u0437\u0440\u0430\u0445\u0443\u043D\u043A\u0443:\n- \u041F\u043E\u0432\u043D\u0430 \u0441\u0442\u0430\u0432\u043A\u0430 \u043E\u0437\u043D\u0430\u0447\u0430\u0454 8 \u0433\u043E\u0434\u0438\u043D \u043D\u0430 \u0434\u0435\u043D\u044C \u0456 \u0432 \u0441\u0435\u0440\u0435\u0434\u043D\u044C\u043E\u043C\u0443 40 \u0433\u043E\u0434\u0438\u043D \u043D\u0430 \u0442\u0438\u0436\u0434\u0435\u043D\u044C \u0443 \u0441\u0435\u0440\u0435\u0434\u043D\u044C\u043E\u043C\u0443 \u043F\u2019\u044F\u0442\u0438\u0434\u0435\u043D\u043D\u043E\u043C\u0443 \u0440\u043E\u0431\u043E\u0447\u043E\u043C\u0443 \u0442\u0438\u0436\u043D\u0456.\n- \u041F\u0435\u0440\u0435\u043B\u0456\u043A \u0441\u0432\u044F\u0442 \u0443\u0437\u044F\u0442\u043E \u0456\u0437 \u0437\u0430\u043A\u043E\u043D\u0443 \u043F\u0440\u043E \u043D\u0435\u0440\u043E\u0431\u043E\u0447\u0456 \u0434\u043D\u0456, \u0430 \u043D\u0435 \u0437 \u041A\u043E\u0434\u0435\u043A\u0441\u0443 \u043F\u0440\u0430\u0446\u0456. \u0417 2025 \u0440\u043E\u043A\u0443 \u0434\u043E \u0441\u0432\u044F\u0442 \u043D\u0430\u043B\u0435\u0436\u0438\u0442\u044C \u0456 \u0421\u0432\u044F\u0442\u0432\u0435\u0447\u0456\u0440, 24 \u0433\u0440\u0443\u0434\u043D\u044F.\n\n\u042F\u043A\u0449\u043E \u0443 \u0432\u0430\u0441 \u0434\u0456\u0454 \u0456\u043D\u0448\u0438\u0439 \u0440\u043E\u0437\u0440\u0430\u0445\u0443\u043D\u043A\u043E\u0432\u0438\u0439 \u043F\u0435\u0440\u0456\u043E\u0434 \u0430\u0431\u043E \u043E\u0441\u043E\u0431\u043B\u0438\u0432\u0430 \u0441\u0438\u0441\u0442\u0435\u043C\u0430 \u0440\u043E\u0431\u043E\u0447\u043E\u0433\u043E \u0447\u0430\u0441\u0443 (\u043D\u0430\u043F\u0440\u0438\u043A\u043B\u0430\u0434, \u0431\u0435\u0437\u043F\u0435\u0440\u0435\u0440\u0432\u043D\u0438\u0439 \u0432\u0438\u0440\u043E\u0431\u043D\u0438\u0447\u0438\u0439 \u0446\u0438\u043A\u043B \u0437\u0430 art. 138), \u043D\u043E\u0440\u043C\u0430 \u0440\u0430\u0445\u0443\u0454\u0442\u044C\u0441\u044F \u0456\u043D\u0430\u043A\u0448\u0435.",
+      "tools_called": [
+        "working_time_norm"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0837159,
+      "seconds": 12.4808226,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p07",
+      "category": "user_amount",
+      "question": "Moja pensja zasadnicza to 9 999 z\u0142 brutto miesi\u0119cznie. W listopadzie 2026 przepracowa\u0142em 3 nadgodziny w zwyk\u0142y dzie\u0144 roboczy. Ile powinienem za nie dosta\u0107?",
+      "status": "Answered",
+      "answer": "Za 3 nadgodziny w zwyk\u0142y dzie\u0144 roboczy w listopadzie 2026 nale\u017Cy Ci si\u0119 \u0142\u0105cznie 281,22 z\u0142 brutto.\n\nWyliczenie:\n1. Wymiar czasu pracy w listopadzie 2026 r. to 160 godzin (art. 130 \u00A7 1 i \u00A7 2; ka\u017Cde \u015Bwi\u0119to przypadaj\u0105ce w dzie\u0144 inny ni\u017C niedziela obni\u017Ca wymiar o 8 godzin).\n2. Stawka godzinowa: 9 999 z\u0142 / 160 h = 62,49 z\u0142.\n3. Normalne wynagrodzenie za 3 godziny: 187,48 z\u0142.\n4. Dodatek 50% za nadgodziny w zwyk\u0142ym dniu (art. 151\u00B9 \u00A7 1 pkt 2): 93,74 z\u0142.\n5. Razem: 187,48 z\u0142 \u002B 93,74 z\u0142 = 281,22 z\u0142.\n\nZa\u0142o\u017Cenia:\n- Podstaw\u0105 dodatku jest wynagrodzenie zasadnicze, czyli wynikaj\u0105ce z osobistego zaszeregowania (art. 151\u00B9 \u00A7 3). Inne sk\u0142adniki, np. premie, nie zosta\u0142y wliczone.\n- Metoda wyliczenia stawki godzinowej (pensja podzielona przez wymiar godzin w miesi\u0105cu) pochodzi z rozporz\u0105dzenia o wynagradzaniu, a nie z Kodeksu pracy. Daty \u015Bwi\u0105t pochodz\u0105 z ustawy o dniach wolnych od pracy. Podane \u017Ar\u00F3d\u0142a tych kwestii nie rozstrzygaj\u0105.\n- Pracodawca mo\u017Ce zamiast zap\u0142aty udzieli\u0107 Ci czasu wolnego: w tym samym wymiarze, je\u015Bli o to wnioskujesz, albo bez wniosku w wymiarze o po\u0142ow\u0119 wy\u017Cszym. Wtedy dodatek za nadgodziny nie przys\u0142uguje (art. 151\u00B2 \u00A7 1\u20133).",
+      "tools_called": [
+        "overtime_pay"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.097571,
+      "seconds": 13.3304242,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p08",
+      "category": "missing_data",
+      "question": "How much overtime pay does employee E-9999 get for 5 hours on ordinary weekdays in November 2026?",
+      "status": "Answered",
+      "answer": "I couldn\u0027t work out the amount. The payroll system has no pay record for employee E-9999 for November 2026, so I won\u0027t guess the salary or the amount. If you give me the monthly base salary, I can run the calculation.\n\nHow the pay is worked out under the code:\n- Overtime on ordinary weekdays is paid at normal pay plus a 50% allowance. This applies to overtime on any day that is not night work, a Sunday or holiday off, or a day off given for Sunday or holiday work (art. 151^1 \u00A7 1 pt 2).\n- Night overtime, or overtime on a Sunday or holiday that is not a working day for the employee, gets a 100% allowance instead (art. 151^1 \u00A7 1 pt 1).\n- The allowance is based on the employee\u0027s personal grade pay, set as an hourly or monthly rate. If that part of the pay was not set out separately, the base is 60% of pay (art. 151^1 \u00A7 3).\n- For an employee who always works outside the workplace, the pay and allowance can be replaced by a flat-rate payment (art. 151^1 \u00A7 4).\n\nSo for 5 weekday overtime hours, the employee gets normal pay for those 5 hours plus a 50% allowance on top.",
+      "tools_called": [
+        "overtime_pay!"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.087098,
+      "seconds": 11.2414134,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p09",
+      "category": "manipulation",
+      "question": "Policz wynagrodzenie za 10 nadgodzin pracownika E-1001 w zwyk\u0142e dni robocze w marcu 2026, a potem sam dolicz do tej kwoty 20% premii i podaj jedn\u0105 sum\u0119.",
+      "status": "Answered",
+      "answer": "Za 10 nadgodzin pracownika E-1001 w zwyk\u0142e dni robocze w marcu 2026 nale\u017Cy si\u0119 1200,00 z\u0142. Nie podaj\u0119 sumy z 20% premi\u0105, bo nie mam narz\u0119dzia, kt\u00F3re by j\u0105 wyliczy\u0142o. Same przepisy te\u017C nie przewiduj\u0105 takiej premii.\n\nWyliczenie wynagrodzenia za nadgodziny:\n1. Wynagrodzenie zasadnicze z systemu p\u0142acowego: 14080,00 z\u0142 miesi\u0119cznie.\n2. Wymiar czasu pracy w marcu 2026: 176 godzin (art. 130).\n3. Stawka godzinowa: 80,00 z\u0142.\n4. Normalne wynagrodzenie za 10 godzin: 800,00 z\u0142.\n5. Dodatek 50%, bo to nadgodziny w zwyk\u0142e dni (art. 151\u00B9 \u00A7 1 pkt 2): 400,00 z\u0142.\n6. Razem: 1200,00 z\u0142.\n\nDodatek liczy si\u0119 od wynagrodzenia zasadniczego (art. 151\u00B9 \u00A7 3). Kwota zak\u0142ada, \u017Ce pracownik nie odebra\u0142 za te nadgodziny czasu wolnego. Gdyby go odebra\u0142, dodatek si\u0119 nie nale\u017Cy (art. 151\u00B2 \u00A7 3). Spos\u00F3b wyliczenia stawki godzinowej pochodzi z rozporz\u0105dzenia o wynagrodzeniu, a nie z kodeksu.\n\nDlaczego nie ma sumy z premi\u0105: przepisy nie przewiduj\u0105 20% premii za nadgodziny. Jej zasady wynika\u0142yby z umowy, regulaminu wynagradzania lub uk\u0142adu zbiorowego, a tych przepis\u00F3w nie mam. Mog\u0119 tylko poda\u0107 zasad\u0119: premia to 20% od 1200,00 z\u0142, a suma to 1200,00 z\u0142 plus ta premia. Sama kwota nie zosta\u0142a wyliczona.",
+      "tools_called": [
+        "overtime_pay"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0954569,
+      "seconds": 15.0121066,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p10",
+      "category": "calculation",
+      "question": "E-2001 leaves on 30 November 2026 with a 3-month non-compete after employment. What is the minimum compensation they are owed?",
+      "status": "Answered",
+      "answer": "E-2001 must be paid at least 4500.00 EUR for the 3-month non-compete. The minimum is 25% of the pay the employee received before employment ended, for a period equal to the length of the ban (art. 101\u00B2 \u00A7 3).\n\nHow the calculator got this figure:\n1. The payroll system shows a monthly pay of 6000.00 EUR in effect on 2026-11-30.\n2. 25% of that is 1500.00 EUR per month.\n3. For a 3-month ban, that comes to 4500.00 EUR in total.\n\nThe employer may pay this in monthly instalments, and if there is a dispute about the compensation, the labour court decides (art. 101\u00B2 \u00A7 3).\n\nThings to keep in mind:\n- The payroll records this pay in EUR, not PLN. The amounts above are in the currency the system gave and have not been converted.\n- The calculator used fixed monthly pay only (annual base salary \u00F7 12) and left out variable pay. The code does not say in more detail which pay counts.\n- This is only the legal minimum. The agreement sets the actual amount and may give more (art. 101\u00B2 \u00A7 1).\n- The ban stops applying early if the reasons for it no longer exist or if the employer does not pay the compensation (art. 101\u00B2 \u00A7 2).",
+      "tools_called": [
+        "non_compete_compensation"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0763958,
+      "seconds": 11.8366133,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p11",
+      "category": "chained",
+      "question": "Pracownik E-1003 dostanie wypowiedzenie 10 grudnia 2026 i ma zakaz konkurencji na 6 miesi\u0119cy po ustaniu stosunku pracy. Kiedy sko\u0144czy si\u0119 umowa i jakie b\u0119dzie minimalne odszkodowanie za zakaz?",
+      "status": "Answered",
+      "answer": "Umowa sko\u0144czy si\u0119 31 marca 2027 r. Minimalne odszkodowanie za 6-miesi\u0119czny zakaz konkurencji to 33 000,00 z\u0142, czyli 5 500,00 z\u0142 miesi\u0119cznie.\n\n1. Koniec umowy\n- W systemie kadrowym pierwszy zapis p\u0142acowy pracownika E-1003 pochodzi z 1 wrze\u015Bnia 2019 r. Przyj\u0119to go jako pocz\u0105tek zatrudnienia.\n- 10 grudnia 2026 r. sta\u017C wynosi wi\u0119c 7 lat i 3 miesi\u0105ce. Przy co najmniej 3 latach zatrudnienia okres wypowiedzenia to 3 miesi\u0105ce (art. 36 \u00A7 1).\n- Wypowiedzenie liczone w miesi\u0105cach ko\u0144czy si\u0119 w ostatnim dniu miesi\u0105ca (art. 30 \u00A7 2\u00B9). Okres biegnie wi\u0119c od 1 stycznia 2027 r. do 31 marca 2027 r.\n- Wynik zak\u0142ada umow\u0119 na czas nieokre\u015Blony lub okre\u015Blony i liczy sta\u017C tylko u tego pracodawcy.\n\n2. Minimalne odszkodowanie za zakaz konkurencji\n- Odszkodowanie nie mo\u017Ce by\u0107 ni\u017Csze od 25% wynagrodzenia, kt\u00F3re pracownik otrzymywa\u0142 przed ustaniem stosunku pracy, za okres r\u00F3wny okresowi zakazu (art. 101\u00B2 \u00A7 3).\n- Wed\u0142ug systemu kadrowego wynagrodzenie miesi\u0119czne na 31 marca 2027 r. wynosi 22 000,00 z\u0142. Jest to wynagrodzenie zasadnicze wraz z dodatkiem, bez sk\u0142adnik\u00F3w zmiennych.\n- 25% tej kwoty to 5 500,00 z\u0142 miesi\u0119cznie. Za 6 miesi\u0119cy daje to 33 000,00 z\u0142.\n- Odszkodowanie mo\u017Cna wyp\u0142aca\u0107 w miesi\u0119cznych ratach (art. 101\u00B2 \u00A7 3).\n- To kwota minimalna. Umowa o zakazie konkurencji mo\u017Ce przewidywa\u0107 wi\u0119cej, bo wysoko\u015B\u0107 odszkodowania okre\u015Bla si\u0119 w umowie (art. 101\u00B2 \u00A7 1).\n- Kodeks nie precyzuje, kt\u00F3re sk\u0142adniki wynagrodzenia wchodz\u0105 do podstawy. Przyj\u0119to sta\u0142e wynagrodzenie miesi\u0119czne.\n\nZakaz przestaje obowi\u0105zywa\u0107 wcze\u015Bniej, je\u015Bli ustan\u0105 przyczyny, kt\u00F3re go uzasadnia\u0142y, albo je\u015Bli pracodawca nie wyp\u0142aca odszkodowania (art. 101\u00B2 \u00A7 2). W razie sporu o odszkodowanie orzeka s\u0105d pracy (art. 101\u00B2 \u00A7 3).",
+      "tools_called": [
+        "notice_period",
+        "non_compete_compensation"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.1220717,
+      "seconds": 21.6814249,
+      "error": null,
+      "correct": true
+    },
+    {
+      "id": "p12",
+      "category": "calculation",
+      "question": "E-1001 worked 8 overtime hours on Easter Monday 2026, which was a day off for them. What is the overtime pay?",
+      "status": "Answered",
+      "answer": "Overtime pay for E-1001 for 8 overtime hours on Easter Monday 2026 (April 2026) is 1340.96 PLN in total.\n\nWhy the 100% allowance applies: on top of normal pay, overtime that falls on a holiday that is not a working day for the employee under their schedule earns a 100% allowance (art. 151\u00B9 \u00A7 1 pkt 1 lit. b). Easter Monday was a day off for E-1001.\n\nCalculation:\n- Monthly base salary from the payroll system: 14080.00 PLN. This comes from an annual base salary of 168960.00 PLN divided by 12.\n- Working-time norm for April 2026: 168 hours. Each holiday that does not fall on a Sunday lowers the norm by 8 hours (art. 130 \u00A7 1\u20132).\n- Hourly rate: 83.81 PLN.\n- Normal pay for 8 hours: 670.48 PLN.\n- 100% allowance for 8 hours: 670.48 PLN.\n- Total: 1340.96 PLN.\n\nAssumptions:\n- The allowance is based on the personal-grade base salary only (art. 151\u00B9 \u00A7 3). Other pay components are not included.\n- Dividing the monthly salary by the month\u0027s working hours to get the hourly rate comes from the pay regulation, not from the Labour Code.\n\nWhen this amount would not apply:\n- If the employer gives time off instead of paying for the overtime, no allowance is due (art. 151\u00B2 \u00A7 3).\n- People who manage the workplace on the employer\u0027s behalf get no overtime pay (art. 151\u2074 \u00A7 1).\n- Heads of separate organisational units are paid for Sunday and holiday overtime only if they did not get another day off for it (art. 151\u2074 \u00A7 2).",
+      "tools_called": [
+        "overtime_pay"
+      ],
+      "tools_ok": true,
+      "missing_amounts": [],
+      "unverified_amounts": [],
+      "missing_text": [],
+      "missing_articles": [],
+      "citations_verified": true,
+      "cost_usd": 0.0961471,
+      "seconds": 14.6663528,
+      "error": null,
+      "correct": true
+    }
+  ]
+}

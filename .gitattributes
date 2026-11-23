@@ -1,3 +1,6 @@
 * text=auto
 # The law text is kept byte for byte as pdftotext wrote it (form feeds separate pages).
 data/** -text
+
+# Shell scripts run inside Linux containers.
+*.sh text eol=lf

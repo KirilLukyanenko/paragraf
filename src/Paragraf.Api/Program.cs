@@ -86,6 +86,9 @@ app.MapPost("/api/ask", async (AskRequest request, ParagrafEngine engine, SpendG
     return Results.Ok(AskResponse.From(answer, cost, Activity.Current?.TraceId.ToString()));
 }).RequireRateLimiting("ask");
 
+// What the page needs to know: whether calculations can read pay from the payroll system.
+app.MapGet("/api/info", (ParagrafEngine engine) => Results.Ok(new { payroll = engine.HasPayroll, model = engine.Defaults.Answer.Model }));
+
 app.MapGet("/api/articles/{number}", (string number, DateOnly? asOf, LawLibrary library, TimeProvider clock) =>
 {
     if (!UnitNumber.TryParse(number, out var n)) return Results.NotFound();
@@ -116,9 +119,13 @@ public sealed record AskResponse(
     IReadOnlyList<AskResponse.CitationDto> Citations,
     IReadOnlyList<AskResponse.SourceDto> Sources,
     string? SearchQuery,
+    IReadOnlyList<AskResponse.CalculationDto> Calculations,
+    IReadOnlyList<AskResponse.AmountDto> Amounts,
     AskResponse.UsageDto Usage,
     string? TraceId)
 {
+    public sealed record CalculationDto(string Tool, JsonElement Arguments, JsonElement Result, bool Failed, double Ms);
+    public sealed record AmountDto(string Text, decimal Value, bool Verified);
     public sealed record CitationDto(string Article, string? Paragraph, string? Display, string Quote, bool Verified, string? Problem);
     public sealed record SourceDto(string Article, string Display, string Location);
     public sealed record UsageDto(string Model, long? InputTokens, long? OutputTokens, decimal CostUsd, double RetrievalMs, double AnswerMs);
@@ -138,6 +145,8 @@ public sealed record AskResponse(
             c.Verified ? null : c.Problem.ToString())).ToList(),
         a.Retrieval.Articles.Select(s => new SourceDto(s.Article.Key, $"art. {s.Article.Number.ToDisplay()}", string.Join(" › ", s.Article.Headings))).ToList(),
         a.Retrieval.Rewrite?.PolishQuery,
+        a.ToolCalls.Select(c => new CalculationDto(c.Name, c.Arguments, c.Result, c.Failed, Math.Round(c.Elapsed.TotalMilliseconds))).ToList(),
+        a.Amounts.Select(x => new AmountDto(x.Text, x.Value, x.Verified)).ToList(),
         new UsageDto(a.Model, a.Usage?.InputTokenCount, a.Usage?.OutputTokenCount, Math.Round(cost, 5),
             Math.Round(a.Retrieval.Elapsed.TotalMilliseconds), Math.Round(a.GenerationTime.TotalMilliseconds)),
         traceId);

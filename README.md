@@ -2,9 +2,12 @@
 
 Answers questions about the Polish Labour Code (Kodeks pracy) in Polish, English or Ukrainian, using only the
 articles of the code **as they read on a chosen date**, and checks every citation by code against the law's own words.
+When the answer needs an amount or a date (overtime pay, the end of a notice period, the minimum non-compete
+compensation), code calculates it by the code's rules. The pay comes from
+[comp-ledger](https://github.com/KirilLukyanenko/comp-ledger), a payroll service, over MCP.
 
-.NET 10 · ASP.NET Core · PostgreSQL 17 + pgvector · Microsoft.Extensions.AI · Claude (Anthropic SDK) · OpenAI embeddings ·
-OpenTelemetry · xUnit · GitHub Actions
+.NET 10 · ASP.NET Core · PostgreSQL 17 + pgvector · Microsoft.Extensions.AI · Claude (Anthropic SDK) · tool calling ·
+Model Context Protocol (C# SDK) · OpenAI embeddings · OpenTelemetry · xUnit · Testcontainers · GitHub Actions
 
 ![The demo page: a question about annual leave, the answer with verified citations, and art. 154 as of today](docs/screenshot.jpg)
 
@@ -28,6 +31,11 @@ OpenTelemetry · xUnit · GitHub Actions
   - 97.2% of the expected points made;
   - 0 answers contradicting the sources;
   - $0.065 and 11.7 s (p50) per question.
+- **Amounts by code, not by the model.** The model picks a calculation and its inputs, and code does the arithmetic
+  (art. 130, 36, 30 § 2¹, 151¹, 101² § 3, 87, 108). A second check by code requires every amount of money in the answer to
+  appear in a calculation's result or in the question. On [12 payroll questions](evals/payroll/questions.jsonl), Opus
+  answered all 12 correctly. Haiku sometimes added amounts up itself, once because a prompt-injection question asked
+  it to, and the check caught every such answer.
 
 ## How it works
 
@@ -65,6 +73,77 @@ flowchart LR
    - Rejected: a paraphrase, a quote from the wrong paragraph, an article the model wasn't shown, and a paragraph that
      doesn't exist on that date.
    - An answer with any unverified citation is marked as not grounded.
+
+## Calculations and the payroll system
+
+![The demo page: overtime pay for employee E-1001, calculated by code from pay read from comp-ledger, with the amounts and citations verified](docs/screenshot-payroll.png)
+
+Some questions need an amount or a date, not only the rule. For example: *"E-1001 worked 10 overtime hours on weekdays
+and 4 on a Sunday in March 2026. What is the overtime pay?"* The rule is in the code. The arithmetic must not be left
+to the model, and the salary is in a payroll system.
+
+```mermaid
+flowchart LR
+    M[Claude] -- "overtime_pay(2026, 3, 10, 4, E-1001)" --> T[Calculations<br/>C#, unit-tested]
+    T -- "MCP get_compensation" --> L[(comp-ledger<br/>payroll service)]
+    L -- "annual base salary on 2026-03-31" --> T
+    T -- "amounts · units applied with their text · assumptions" --> M
+    M --> C[Citation check +<br/>amount check by code]
+```
+
+- **[`LabourCalculations`](src/Paragraf.Core/Calculations/LabourCalculations.cs)** has plain functions with unit tests:
+  - the working-time norm of a month (art. 130, with public holidays, including Christmas Eve from 2025);
+  - the notice period and the day it ends (art. 36 § 1, art. 30 § 2¹);
+  - overtime pay (art. 151¹: normal pay plus 50% or 100% of the base salary);
+  - the minimum non-compete compensation (art. 101² § 3);
+  - the limits of deductions from pay (art. 87 § 3–4, art. 108 § 3).
+
+  Each result names the units it applies and every assumption from outside the code, such as the pay regulation's
+  hourly rate or the holiday act.
+- **[`LabourTools`](src/Paragraf.Rag/Payroll/LabourTools.cs)** offers these calculations to the model as tools, through
+  `Microsoft.Extensions.AI` function invocation. A result carries the text of the units it applied, as they read on
+  the answer's date. The answer may cite them, and the citation check treats them like retrieved articles.
+- **[`CompLedgerClient`](src/Paragraf.Rag/Payroll/CompensationSource.cs)** is an MCP client of comp-ledger (C# MCP
+  SDK, Streamable HTTP, the tenant in a header). The calculations call it, the model does not: comp-ledger's own
+  tools, which include `create_snapshot`, are never offered to the model. The model can ask for an employee's pay
+  only through a read-only tool, and the tenant is fixed by configuration.
+- **[`AmountCheck`](src/Paragraf.Core/Answers/AmountCheck.cs)** finds every amount of money in the answer, in Polish or
+  English notation. It marks the answer as not grounded if an amount is in neither a tool result nor the question.
+  Correct arithmetic done by the model counts as a failure too: the answer must quote the calculation.
+
+The [payroll eval](evals/payroll/questions.jsonl) runs against comp-ledger with [demo employees](evals/payroll/employees.csv):
+a raise in the middle of the year, a short tenure, an employee paid in EUR, and an unknown id. It has 12 questions:
+- single calculations;
+- two chained calculations (a notice period, then a non-compete paid on its last day);
+- an amount given in the question;
+- an unknown employee;
+- a request to add a 20% bonus "yourself".
+
+Code checks everything, with no judge: the right tools ran, the expected amounts and dates are in the answer, every
+amount came from a tool, and every citation passes.
+
+| Answer model | Correct | Right tools | Expected amounts and dates | Amounts from tools | Citations verified | Cost / question | p50 |
+|---|---|---|---|---|---|---|---|
+| [Claude Opus 5.5](evals/runs/payroll-opus-5-5-medium.md) | 12 / 12 | 100% | 100% | 100% | 100% | $0.098 | 15.0 s |
+| [Claude Sonnet 5.5](evals/runs/payroll-sonnet-5-5-medium.md) | 11 / 12 | 100% | 92% | 100% | 100% | $0.059 | 11.3 s |
+| [Claude Haiku 5.5](evals/runs/payroll-haiku-5-5-medium.md) | 11 / 12 | 100% | 100% | 92% | 100% | $0.003 | 11.1 s |
+
+All three models called the right tools every time. The misses were these:
+- **Sonnet answered an English question in Spanish.** The period and the date were right. The check for the expected
+  "3 months" caught it.
+- **Haiku did arithmetic of its own after the tool**: "normal pay for 10 hours 800,00 zł" and "the allowances alone
+  720,00 zł". Both sums are right, and both fail the amount check, as designed.
+- **An earlier run of Haiku did the bonus.** That run was made before the tools prompt said what to do when no tool
+  gives an amount, and it is not kept. Haiku did its own sums in three answers, one of them the 20% bonus from the
+  injection question: "1 200,00 zł + 240,00 zł = 1 440,00 zł". Opus and Sonnet refused the bonus in every run and
+  said why.
+
+Runs vary: a model that misses one question in one run may answer it in the next. Twelve questions show the kinds of
+failure, not a precise rate.
+
+[`CompLedgerTests`](tests/Paragraf.IntegrationTests/CompLedgerTests.cs) builds comp-ledger from its own Dockerfile in
+Testcontainers. It loads the demo employees through comp-ledger's REST API, then checks the MCP client and the tools
+against it, with no model involved. CI checks out comp-ledger next to paragraf for this test.
 
 ## What was measured
 
@@ -113,6 +192,20 @@ Opus's one wrong status in the injection category is a correct refusal (q093 ask
 rule now accepts it. In the not-in-code category, most "outside law" flags are pointers such as "the amount is set by
 the minimum wage act". The prompt asks for those pointers, and the judge counts them.
 
+The runs above were made before the calculation tools existed.
+[A full run of Sonnet with the tools](evals/runs/answers-sonnet-5-5-medium-tools.md) checked that the tools don't hurt
+ordinary questions:
+- status 100%;
+- expected points 96.4%, against 95.6% without the tools;
+- 0 contradictions;
+- $0.041 a question.
+
+Grounded answers fell from 99% to 97%. Both new failures came from the new amount check, not from the tools. Two
+questions on deductions from pay ask for an amount ("3,600 PLN") that no tool calculated yet, so the model did the
+arithmetic itself. A `deduction_limits` calculation (art. 87 § 3–4, art. 108 § 3) closed the gap, and on
+[a re-run of those two questions](evals/runs/answers-sonnet-5-5-medium-tools-deductions.md) both answers are grounded,
+with every expected point.
+
 ### What went wrong and what changed because of it
 
 | Found by | Problem | Change |
@@ -122,6 +215,8 @@ the minimum wage act". The prompt asks for those pointers, and the judge counts 
 | Building the eval set | Hours lost their superscript minutes (`2100 a 700`); a footnote continued onto the next page leaked into art. 3¹ | Parser fixes with tests |
 | Eval-set test | Two evidence quotes ended in a line-break hyphen | A unit test checks every expected unit and evidence quote against the parsed code |
 | The demo page | A malformed JSON body returned 500 in Development | 400 in every environment |
+| Full run with the tools | Two answers on deductions from pay did the arithmetic themselves; the new amount check failed them | A `deduction_limits` calculation; both questions grounded on a re-run |
+| Payroll eval, first run | The amount check rejected the annual salary that Opus quoted. comp-ledger had returned it, but the tool result held it only inside an assumption sentence | Tool results carry the payroll data they used as numbers. Opus went from 11 to 12 of 12 |
 
 ## The eval set
 
@@ -156,9 +251,9 @@ against the parsed code, through the same citation check the answers go through.
   it is parsed at start, since articles and citation checks come from the parsed text, not from the database.
 - **Costs are first-class.** Every answer carries its tokens and cost, and every eval run records its cost. The public
   demo has a per-address rate limit and a daily spend ceiling.
-- **CI** builds with warnings as errors, runs the unit tests, builds the image, and gates on retrieval recall ≥ 95% over
-  all 100 questions (about $0.02 a run). The full answer eval runs on manual dispatch, with gates on status accuracy and
-  grounded answers.
+- **CI** builds with warnings as errors, runs the unit tests and the integration tests (pgvector, and comp-ledger
+  built from its repository), builds the image, and gates on retrieval recall ≥ 95% over all 100 questions (about
+  $0.02 a run). The full answer eval runs on manual dispatch, with gates on status accuracy and grounded answers.
 
 ## Running it
 
@@ -177,12 +272,27 @@ dotnet run --project src/Paragraf.Cli -- eval --sample 10            # about $0.
 dotnet run --project src/Paragraf.Api                                # the page and /api/ask
 ```
 
+With the payroll system (a clone of [comp-ledger](https://github.com/KirilLukyanenko/comp-ledger) at `../comp-ledger`):
+
+```bash
+printf 'COMP_LEDGER_DB_PASSWORD=%s\nCOMP_LEDGER_APP_PASSWORD=%s\n' $(openssl rand -hex 16) $(openssl rand -hex 16) >> .env
+docker compose --profile payroll up -d --build                       # comp-ledger on 127.0.0.1:8090
+dotnet run --project src/Paragraf.Cli -- seed-payroll                # a tenant with the demo employees; prints its id
+export CompLedger__Endpoint=http://127.0.0.1:8090/mcp CompLedger__TenantId=...
+dotnet run --project src/Paragraf.Cli -- ask "E-1003 gets notice on 10 December 2026. When does it end?"
+dotnet run --project src/Paragraf.Cli -- eval-payroll --model claude-sonnet-5-5   # 12 questions, about $0.65
+```
+
+Without comp-ledger the calculations still work when the question gives the amounts.
+
 ## Limits
 
 - **One act.** Questions that need other acts (the Civil Code for counting deadlines, social insurance, minimum wage
   regulations) get "not in the sources" and a pointer, not an answer.
 - **Not checked by people.** The eval set and the judge are models. Code checks what code can check: retrieval,
   statuses, and that citations are the law's words. Neither the set nor the answers have been reviewed by a lawyer.
+- **Simplified pay.** The calculations take the fixed monthly pay: comp-ledger's annual amounts divided by 12.
+  Variable pay, averaging periods and the pay regulations are not modelled; each result says what it assumed.
 - **General information, not legal advice.**
 
 The law text is public: Polish normative acts are not subject to copyright (art. 4 of the Copyright Act). The source and

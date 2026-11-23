@@ -50,6 +50,16 @@
   .sources a { display: inline-block; margin: 0 6px 6px 0; padding: 2px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); text-decoration: none; font-size: 13px; }
   .sources a:hover { border-color: var(--accent); }
   .error { color: var(--bad); margin-top: 16px; }
+  .calc { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 14px; }
+  .calc.bad { border-color: var(--bad); }
+  .calc code { font-size: 13px; color: var(--muted); }
+  .calc table { border-collapse: collapse; margin-top: 6px; font-size: 13.5px; }
+  .calc td { padding: 1px 14px 1px 0; vertical-align: top; }
+  .calc td:first-child { color: var(--muted); }
+  .calc ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .amount { display: inline-block; margin: 0 6px 6px 0; padding: 2px 8px; border-radius: 6px; font-size: 13px; background: var(--ok-bg); color: var(--ok); }
+  .amount.bad { background: var(--bad-bg); color: var(--bad); }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
   footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
   footer a { color: inherit; }
 </style>
@@ -71,6 +81,8 @@
         <button id="go" type="submit">Ask</button>
       </div>
       <div class="examples" id="examples"></div>
+      <div class="hint" id="payroll" hidden>Calculations read pay from <a href="https://github.com/KirilLukyanenko/comp-ledger">comp-ledger</a> over MCP.
+        Demo employees: E-1001 (raise on 1 July 2026), E-1002 (since 15 June 2026), E-1003 (since 2019), E-2001 (paid in EUR).</div>
     </form>
     <div id="result"></div>
   </section>
@@ -95,13 +107,44 @@ const examples = [
   "Co to jest mobbing według kodeksu?",
   "Скільки триває випробувальний термін?",
 ];
+const payrollExamples = [
+  "E-1001 worked 10 overtime hours on weekdays and 4 on a Sunday (a day off) in March 2026. What is the overtime pay?",
+  "Pracodawca wypowiada umowę pracownikowi E-1003 10 grudnia 2026. Kiedy kończy się okres wypowiedzenia?",
+];
 const $ = id => document.getElementById(id);
 $("asof").value = new Date().toISOString().slice(0, 10);
-for (const q of examples) {
+function addExample(q) {
   const b = document.createElement("button");
   b.type = "button"; b.textContent = q;
   b.onclick = () => { $("question").value = q; $("question").focus(); };
   $("examples").append(b);
+}
+examples.forEach(addExample);
+fetch("/api/info").then(r => r.json()).then(info => {
+  if (!info.payroll) return;
+  $("payroll").hidden = false;
+  payrollExamples.forEach(addExample);
+}).catch(() => {});
+const toolNames = { working_time_norm: "Working-time norm", notice_period: "Notice period", overtime_pay: "Overtime pay",
+                    non_compete_compensation: "Non-compete compensation", get_employee_pay: "Pay from the payroll system" };
+const label_ = k => k.replaceAll("_", " ").replace(/at(\d)/, "at $1");
+const sup = { "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "0": "⁰" };
+const unit = n => n.replace(/\^(\w+)/, (_, x) => [...x].map(ch => sup[ch] || ch).join(""));
+function value(v) {
+  if (v === null || v === undefined) return "–";
+  if (Array.isArray(v)) return v.map(value).join(", ");
+  if (typeof v === "object") return Object.entries(v).filter(([k, x]) => k !== "note" && x !== null).map(([k, x]) => label_(k) + " " + value(x)).join("; ");
+  return String(v);
+}
+function calculation(c) {
+  const args = Object.entries(c.arguments).filter(([, v]) => v !== null).map(([k, v]) => `${label_(k)}=${v}`).join(", ");
+  if (c.failed) return `<div class="calc bad"><b>${esc(toolNames[c.tool] || c.tool)}</b> <code>${esc(args)}</code><div class="error" style="margin:4px 0 0">${esc(c.result.error)}</div></div>`;
+  const rows = Object.entries(c.result).filter(([k]) => !["basis", "assumptions"].includes(k))
+    .map(([k, v]) => `<tr><td>${esc(k === "payroll" ? "from comp-ledger" : label_(k))}</td><td>${esc(value(v))}</td></tr>`).join("");
+  const basis = (c.result.basis || []).map(b => `art. ${unit(b.article)}${b.paragraph ? " § " + unit(b.paragraph) : ""}`).join(", ");
+  const assumptions = (c.result.assumptions || []).map(a => `<li>${esc(a)}</li>`).join("");
+  return `<div class="calc"><b>${esc(toolNames[c.tool] || c.tool)}</b> <code>${esc(args)}</code> <code>· ${c.ms} ms</code>
+    <table>${rows}</table>${basis ? `<div style="margin-top:4px">Applies ${esc(basis)}</div>` : ""}${assumptions ? `<ul>${assumptions}</ul>` : ""}</div>`;
 }
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 const problems = { NotInSources: "not among the sources the model was given", NoSuchParagraph: "no such paragraph on this date",
@@ -138,10 +181,14 @@ $("ask").onsubmit = async e => {
     const cites = body.citations.map(c => `<div class="cite ${c.verified ? "" : "bad"}">
         <b data-article="${esc(c.article)}">${esc(c.display || c.article)}</b> ${c.verified ? "✓ verified" : "✗ " + esc(problems[c.problem] || c.problem)}
         <small>„${esc(c.quote)}”</small></div>`).join("");
+    const calcs = body.calculations.map(calculation).join("");
+    const amounts = body.amounts.map(a => `<span class="amount ${a.verified ? "" : "bad"}" title="${a.verified ? "from a calculation or the question" : "not from a calculation: the model wrote it"}">${esc(a.text)} ${a.verified ? "✓" : "✗"}</span>`).join("");
     const sources = body.sources.map(s => `<a href="#" data-article="${esc(s.article)}" title="${esc(s.location)}">${esc(s.display)}</a>`).join("");
     $("result").innerHTML = `<div class="answer">
-        <span class="status ${grounded}">${esc(label)}${grounded === "grounded" ? " · all citations verified" : grounded ? " · unverified citation" : ""}</span>
+        <span class="status ${grounded}">${esc(label)}${grounded === "grounded" ? (amounts ? " · citations and amounts verified" : " · all citations verified") : grounded ? " · unverified citation or amount" : ""}</span>
         <div class="text">${esc(body.answer)}</div>
+        ${calcs ? `<h2>Calculated by code</h2>${calcs}` : ""}
+        ${amounts ? `<h2>Amounts in the answer</h2>${amounts}` : ""}
         ${cites ? `<h2>Citations</h2>${cites}` : ""}
         <h2>Articles the model was given</h2><div class="sources">${sources}</div>
         <div class="meta">Law as of ${esc(body.as_of)} · ${esc(body.usage.model)} · ${(body.usage.retrieval_ms / 1000).toFixed(1)} s search,
@@ -155,6 +202,14 @@ $("ask").onsubmit = async e => {
     $("go").disabled = false; $("go").textContent = "Ask";
   }
 };
+
+// A link can carry the question: /?q=...&as_of=yyyy-MM-dd asks it on load.
+const params = new URLSearchParams(location.search);
+if (params.get("q")) {
+  $("question").value = params.get("q");
+  if (params.get("as_of")) $("asof").value = params.get("as_of");
+  $("ask").requestSubmit();
+}
 </script>
 </body>
 </html>

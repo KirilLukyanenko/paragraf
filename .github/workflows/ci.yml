@@ -24,8 +24,15 @@ jobs:
           dotnet-version: "10.0.x"
       - run: dotnet build Paragraf.slnx -warnaserror
       - run: dotnet test tests/Paragraf.UnitTests --no-build
-      - name: Integration tests (PostgreSQL + pgvector in Testcontainers)
+      # The payroll tests build the real comp-ledger from its Dockerfile and call it over MCP.
+      - uses: actions/checkout@v4
+        with:
+          repository: KirilLukyanenko/comp-ledger
+          path: comp-ledger
+      - name: Integration tests (pgvector, and comp-ledger over MCP, in Testcontainers)
         run: dotnet test tests/Paragraf.IntegrationTests --no-build
+        env:
+          COMP_LEDGER_DIR: ${{ github.workspace }}/comp-ledger
 
   docker:
     runs-on: ubuntu-latest

@@ -1,5 +1,9 @@
 # Local PostgreSQL with pgvector for development and evals.
 # The password comes from .env (not in git): PARAGRAF_DB_PASSWORD=...
+#
+# With --profile payroll, also comp-ledger (github.com/KirilLukyanenko/comp-ledger), the payroll service the
+# calculation tools read pay from over MCP. It is built from a clone at ../comp-ledger (or COMP_LEDGER_DIR) and needs
+# COMP_LEDGER_DB_PASSWORD and COMP_LEDGER_APP_PASSWORD in .env. Then: paragraf seed-payroll.
 services:
   db:
     image: pgvector/pgvector:pg17
@@ -11,5 +15,35 @@ services:
       - "127.0.0.1:5442:5432"
     volumes:
       - paragraf-db:/var/lib/postgresql/data
+
+  comp-ledger-db:
+    profiles: [payroll]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: ${COMP_LEDGER_DB_PASSWORD:?set COMP_LEDGER_DB_PASSWORD in .env}
+      COMP_APP_PASSWORD: ${COMP_LEDGER_APP_PASSWORD:?set COMP_LEDGER_APP_PASSWORD in .env}
+    volumes:
+      - ./deploy/comp-ledger/init-roles.sh:/docker-entrypoint-initdb.d/init-roles.sh:ro
+      - comp-ledger-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      retries: 30
+
+  comp-ledger:
+    profiles: [payroll]
+    build: ${COMP_LEDGER_DIR:-../comp-ledger}
+    environment:
+      ConnectionStrings__App: Host=comp-ledger-db;Username=comp_app_login;Password=${COMP_LEDGER_APP_PASSWORD};Database=postgres
+      ConnectionStrings__Migrations: Host=comp-ledger-db;Username=postgres;Password=${COMP_LEDGER_DB_PASSWORD};Database=postgres
+      Database__MigrateOnStartup: "true"
+      TenantAdminApi__Enabled: "true"
+    ports:
+      - "127.0.0.1:8090:8080"
+    depends_on:
+      comp-ledger-db:
+        condition: service_healthy
+
 volumes:
   paragraf-db:
+  comp-ledger-db:

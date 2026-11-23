@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI;
+using Paragraf.Rag.Payroll;
 
 namespace Paragraf.Rag;
 
@@ -16,15 +17,20 @@ public sealed record ParagrafSettings
 }
 
 /// <summary>Retrieval and answering in one call: what the API and the eval runner both use.</summary>
-public sealed class ParagrafEngine(Retriever retriever, Answerer answerer, ParagrafSettings defaults)
+public sealed class ParagrafEngine(
+    Retriever retriever, Answerer answerer, LawLibrary library, ParagrafSettings defaults, ICompensationSource? compensation = null)
 {
     public ParagrafSettings Defaults => defaults;
+
+    /// <summary>Whether a payroll system (comp-ledger) is connected.</summary>
+    public bool HasPayroll => compensation is not null;
 
     public async Task<Answer> AskAsync(string question, DateOnly asOf, ParagrafSettings? settings = null, CancellationToken ct = default)
     {
         settings ??= defaults;
         var retrieval = await retriever.RetrieveAsync(question, asOf, settings.Retrieval, ct);
-        return await answerer.AnswerAsync(question, asOf, retrieval, settings.Answer, ct);
+        var tools = settings.Answer.Tools ? new LabourTools(library, compensation, asOf) : null;
+        return await answerer.AnswerAsync(question, asOf, retrieval, settings.Answer, tools, ct);
     }
 }
 
@@ -54,8 +60,10 @@ public static class ParagrafServices
             var apiKey = configuration["Anthropic:ApiKey"] ?? configuration["ANTHROPIC_API_KEY"]
                 ?? throw new InvalidOperationException("Anthropic:ApiKey (or ANTHROPIC_API_KEY) is not set.");
             var anthropic = new AnthropicClient { ApiKey = apiKey };
+            // Function invocation outside telemetry: each model call of a tool loop is its own span.
             return anthropic.AsIChatClient(settings.Answer.Model)
                 .AsBuilder()
+                .UseFunctionInvocation(sp.GetService<ILoggerFactory>(), f => f.MaximumIterationsPerRequest = 8)
                 .UseOpenTelemetry(sp.GetService<ILoggerFactory>(), ActivitySource)
                 .Build(sp);
         });
@@ -72,7 +80,17 @@ public static class ParagrafServices
         services.AddSingleton(sp => new QueryRewriter(sp.GetRequiredService<IChatClient>(), settings.RewriteModel));
         services.AddSingleton<Retriever>();
         services.AddSingleton<Answerer>();
-        services.AddSingleton<ParagrafEngine>();
+        // comp-ledger over MCP, when configured: CompLedger:Endpoint (its /mcp URL) and CompLedger:TenantId.
+        var compLedger = configuration.GetSection("CompLedger").Get<CompLedgerOptions>();
+        if (compLedger?.Endpoint is not null)
+        {
+            services.AddSingleton(compLedger);
+            services.AddSingleton<CompLedgerClient>();
+            services.AddSingleton<ICompensationSource>(sp => sp.GetRequiredService<CompLedgerClient>());
+        }
+        services.AddSingleton(sp => new ParagrafEngine(
+            sp.GetRequiredService<Retriever>(), sp.GetRequiredService<Answerer>(), sp.GetRequiredService<LawLibrary>(),
+            settings, sp.GetService<ICompensationSource>()));
         services.AddSingleton<Ingestion>();
         return services;
     }

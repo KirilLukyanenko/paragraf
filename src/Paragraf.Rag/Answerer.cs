@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using Paragraf.Core.Answers;
+using Paragraf.Rag.Payroll;
 
 namespace Paragraf.Rag;
 
@@ -38,6 +39,8 @@ public sealed record AnswerSettings
     public string Model { get; init; } = "claude-opus-5-5";
     public ReasoningEffort Effort { get; init; } = ReasoningEffort.Medium;
     public int MaxOutputTokens { get; init; } = 8000;
+    /// <summary>Give the model the calculation tools (and the payroll system when one is connected).</summary>
+    public bool Tools { get; init; } = true;
 }
 
 public sealed record Answer(
@@ -49,10 +52,16 @@ public sealed record Answer(
     string Model,
     UsageDetails? Usage,
     decimal CostUsd,
-    TimeSpan GenerationTime)
+    TimeSpan GenerationTime,
+    IReadOnlyList<ToolCall> ToolCalls,
+    IReadOnlyList<CheckedAmount> Amounts)
 {
-    /// <summary>An answer that claims to answer must stand on at least one verified citation, and on no false one.</summary>
-    public bool Grounded => Status != AnswerStatus.Answered || (Citations.Count > 0 && Citations.All(c => c.Verified));
+    /// <summary>
+    /// An answer that claims to answer must stand on at least one verified citation, and on no false one; and every
+    /// amount of money in it must come from a calculation or from the question.
+    /// </summary>
+    public bool Grounded => Status != AnswerStatus.Answered
+        || (Citations.Count > 0 && Citations.All(c => c.Verified) && Amounts.All(a => a.Verified));
 }
 
 /// <summary>Writes the answer from the retrieved articles, then checks its citations by code.</summary>
@@ -85,12 +94,13 @@ public sealed class Answerer(IChatClient chat, LawLibrary library)
           beyond one short sentence when the answer depends on facts you don't have.
         """;
 
-    public async Task<Answer> AnswerAsync(string question, DateOnly asOf, Retrieval retrieval, AnswerSettings settings, CancellationToken ct = default)
+    public async Task<Answer> AnswerAsync(
+        string question, DateOnly asOf, Retrieval retrieval, AnswerSettings settings, LabourTools? tools = null, CancellationToken ct = default)
     {
         var watch = Stopwatch.StartNew();
         var messages = new List<ChatMessage>
         {
-            new(ChatRole.System, Instructions),
+            new(ChatRole.System, tools is null ? Instructions : Instructions + Environment.NewLine + LabourTools.Instructions),
             new(ChatRole.User, BuildPrompt(question, asOf, retrieval)),
         };
         var options = new ChatOptions
@@ -98,18 +108,24 @@ public sealed class Answerer(IChatClient chat, LawLibrary library)
             ModelId = settings.Model,
             MaxOutputTokens = settings.MaxOutputTokens,
             Reasoning = new ReasoningOptions { Effort = settings.Effort },
+            Tools = tools?.Functions(),
         };
         var response = await chat.GetResponseAsync<ModelAnswer>(messages, options, cancellationToken: ct);
         var cost = Pricing.Cost(settings.Model, response.Usage);
 
         if (response.FinishReason == ChatFinishReason.ContentFilter || !response.TryGetResult(out var answer))
         {
-            return new Answer(AnswerStatus.Refused, response.Text, [], retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed);
+            return new Answer(AnswerStatus.Refused, response.Text, [], retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed,
+                tools?.Calls ?? [], []);
         }
-        var sourceKeys = retrieval.Articles.Select(a => a.Article.Key).ToHashSet();
+        var calls = tools?.Calls ?? [];
+        // A calculation brings the units it applied: the answer may cite them like the retrieved articles.
+        var sourceKeys = retrieval.Articles.Select(a => a.Article.Key).Concat(calls.SelectMany(c => c.BasisArticles)).ToHashSet();
         var citations = CitationCheck.Check(library.Act, asOf, sourceKeys,
             answer.Citations.Select(c => new Citation(c.Article, c.Paragraph, c.Quote)));
-        return new Answer(answer.Status, answer.Answer, citations, retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed);
+        var amounts = AmountCheck.Check(answer.Answer, calls.SelectMany(c => c.Numbers).Concat(AmountCheck.NumbersIn(question)));
+        return new Answer(answer.Status, answer.Answer, citations, retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed,
+            calls, amounts);
     }
 
     public static string BuildPrompt(string question, DateOnly asOf, Retrieval retrieval)
