@@ -82,7 +82,19 @@ switch (command)
         Console.WriteLine();
         Console.WriteLine(EvalRunner.Markdown(summary, results).Split("## Misses")[0]);
         Console.WriteLine($"written to evals/runs/{summary.Name}.json and .md");
-        return 0;
+
+        // Quality gates for CI: a run below a threshold fails the build.
+        var failures = new List<string>();
+        void Gate(string metric, double? value, double? min)
+        {
+            if (min is { } m && (value ?? 0) < m) failures.Add($"{metric} {value:0.000} < {m:0.000}");
+        }
+        Gate("retrieval recall", summary.RetrievalRecall, options.MinRecall);
+        Gate("status accuracy", summary.StatusAccuracy, options.MinStatus);
+        Gate("grounded rate", summary.GroundedRate, options.MinGrounded);
+        if (summary.Errors > 0 && options.MinRecall is not null) failures.Add($"{summary.Errors} questions failed with an error");
+        foreach (var f in failures) Console.Error.WriteLine($"GATE FAILED: {f}");
+        return failures.Count == 0 ? 0 : 2;
     }
     default:
         Console.WriteLine("""
@@ -93,6 +105,7 @@ switch (command)
             options: --as-of yyyy-MM-dd  --model M  --effort low|medium|high  --articles K  --lexical-weight W
                      --no-vector --no-lexical --no-named --no-rewrite
                      eval: --retrieval-only --name N --sample N --ids q001,q002 --category lookup --judge M --parallel N
+                           gates (exit 2 below): --min-recall F --min-status F --min-grounded F
             """);
         return command == "help" ? 0 : 1;
 }
@@ -116,6 +129,11 @@ internal sealed class Options
     public HashSet<string> Categories { get; } = [];
     public string? JudgeModel { get; private set; }
     public int? Parallelism { get; private set; }
+    public double? MinRecall { get; private set; }
+    public double? MinStatus { get; private set; }
+    public double? MinGrounded { get; private set; }
+
+    private static double Fraction(string s) => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
 
     public static Options Parse(string[] args)
     {
@@ -149,6 +167,9 @@ internal sealed class Options
                 case "--category": foreach (var c in Next().Split(',')) o.Categories.Add(c.Trim()); break;
                 case "--judge": o.JudgeModel = Next(); break;
                 case "--parallel": o.Parallelism = int.Parse(Next()); break;
+                case "--min-recall": o.MinRecall = Fraction(Next()); break;
+                case "--min-status": o.MinStatus = Fraction(Next()); break;
+                case "--min-grounded": o.MinGrounded = Fraction(Next()); break;
                 default: o.Positional.Add(args[i]); break;
             }
         }

@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      answers:
+        description: "Also run the full answer eval (about $6 of API calls)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      - run: dotnet build Paragraf.slnx -warnaserror
+      - run: dotnet test tests/Paragraf.UnitTests --no-build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t paragraf .
+
+  # Retrieval quality on all 100 questions: costs about $0.02 (embeddings and the query rewrite).
+  # Runs only where the repository has the API keys as secrets; forks and PRs from forks skip it.
+  eval-retrieval:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ConnectionStrings__Paragraf: Host=localhost;Port=5432;Username=paragraf;Password=paragraf-ci;Database=paragraf
+    services:
+      db:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: paragraf
+          POSTGRES_PASSWORD: paragraf-ci
+          POSTGRES_DB: paragraf
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U paragraf" --health-interval 5s --health-retries 10
+    steps:
+      - name: Skip without API keys
+        id: keys
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ -n "$OPENAI_API_KEY" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "No API keys in secrets: skipping the eval."; fi
+      - uses: actions/checkout@v4
+        if: steps.keys.outputs.ok == 'true'
+      - uses: actions/setup-dotnet@v4
+        if: steps.keys.outputs.ok == 'true'
+        with:
+          dotnet-version: "10.0.x"
+      - name: Ingest
+        if: steps.keys.outputs.ok == 'true'
+        run: dotnet run --project src/Paragraf.Cli -- ingest
+      - name: Retrieval eval (gate: recall 95%)
+        if: steps.keys.outputs.ok == 'true'
+        run: dotnet run --project src/Paragraf.Cli -- eval --retrieval-only --name ci-retrieval --min-recall 0.95
+      - name: Answer eval (gates: status 90%, grounded 90%)
+        if: steps.keys.outputs.ok == 'true' && github.event_name == 'workflow_dispatch' && inputs.answers
+        run: dotnet run --project src/Paragraf.Cli -- eval --name ci-answers --min-status 0.90 --min-grounded 0.90
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.keys.outputs.ok == 'true'
+        with:
+          name: eval-runs
+          path: evals/runs/ci-*
