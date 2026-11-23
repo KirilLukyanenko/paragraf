@@ -36,9 +36,7 @@ public static partial class LexicalTerms
         return terms;
     }
 
-    /// <summary>The terms joined by spaces, as stored next to each chunk.</summary>
-    public static string Document(string text, int prefixLength = PrefixLength) => string.Join(' ', Of(text, prefixLength));
-
+    /// <summary>Removes Polish (and other) diacritics: "zaświadczenie" → "zaswiadczenie".</summary>
     public static string RemoveDiacritics(string text)
     {
         // ł has no decomposition, so it needs its own rule.

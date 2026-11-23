@@ -13,12 +13,14 @@ public sealed record RetrievalSettings
     public bool NamedArticles { get; init; } = true;
     public bool Rewrite { get; init; } = true;
     public int CandidatesPerList { get; init; } = 30;
+    /// <summary>Weight of the BM25 list in rank fusion (the vector list weighs 1).</summary>
+    public double LexicalWeight { get; init; } = 0.5;
     /// <summary>How many distinct articles go into the prompt.</summary>
-    public int Articles { get; init; } = 6;
+    public int Articles { get; init; } = 8;
 
     public string Describe() => string.Join('+', new[]
     {
-        Vector ? "vector" : null, Lexical ? "lexical" : null, NamedArticles ? "named" : null, Rewrite ? "rewrite" : null,
+        Vector ? "vector" : null, Lexical ? $"bm25x{LexicalWeight}" : null, NamedArticles ? "named" : null, Rewrite ? "rewrite" : null,
     }.Where(s => s is not null)) + $"/k{Articles}";
 }
 
@@ -58,13 +60,13 @@ public sealed class Retriever(
         var vectorTask = settings.Vector
             ? EmbedAndSearch(act, rewrite is null ? question : rewrite.PolishQuery, date, settings.CandidatesPerList, ct)
             : Task.FromResult<IReadOnlyList<ChunkStore.Hit>>([]);
-        var lexicalTask = settings.Lexical
-            ? store.LexicalAsync(act, LexicalTerms.Of(searchText), date, settings.CandidatesPerList, ct)
-            : Task.FromResult<IReadOnlyList<ChunkStore.Hit>>([]);
-        await Task.WhenAll(vectorTask, lexicalTask);
+        var lexical = settings.Lexical
+            ? library.Bm25.Search(searchText, settings.CandidatesPerList, id => library.Chunk(id)!.Validity.IsInForceOn(date)).Select(h => h.Id).ToList()
+            : [];
+        var vector = await vectorTask;
 
-        if (settings.Vector) lists.Add(("vector", vectorTask.Result.Select(h => h.Id).ToList(), 1.0));
-        if (settings.Lexical) lists.Add(("lexical", lexicalTask.Result.Select(h => h.Id).ToList(), 1.0));
+        if (settings.Vector) lists.Add(("vector", vector.Select(h => h.Id).ToList(), 1.0));
+        if (settings.Lexical) lists.Add(("lexical", lexical, settings.LexicalWeight));
         if (settings.NamedArticles)
         {
             var named = NamedChunks(question, date).Concat(rewrite is null ? [] : NamedChunks(string.Join(' ', rewrite.Articles.Select(a => "art. " + a)), date)).Distinct().ToList();

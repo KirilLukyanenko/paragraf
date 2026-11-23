@@ -1,4 +1,5 @@
 using Paragraf.Core.Law;
+using Paragraf.Core.Search;
 
 namespace Paragraf.Rag;
 
@@ -17,7 +18,10 @@ public sealed class LawLibrary
         Act = act;
         Chunks = Chunker.Chunk(act);
         _byId = Chunks.ToDictionary(c => c.Id);
+        Bm25 = new Bm25Index(Chunks.Select(c => (c.Id, c.Content)));
     }
+
+    public Bm25Index Bm25 { get; }
 
     public static LawLibrary KodeksPracy(string dataDirectory) => new(LawParser.Parse(
         File.ReadAllText(Path.Combine(dataDirectory, "kodeks-pracy", "DU-2026-1245.txt")),

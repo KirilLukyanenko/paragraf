@@ -9,7 +9,7 @@ public sealed class Ingestion(LawLibrary library, ChunkStore store, IEmbeddingGe
 
     public async Task<Result> RunAsync(Action<string>? progress = null, CancellationToken ct = default)
     {
-        await store.EnsureSchemaAsync(ct);
+        await store.RecreateSchemaAsync(ct);
         var chunks = library.Chunks;
         var rows = new List<(Paragraf.Core.Law.Chunk, float[])>(chunks.Count);
         long tokens = 0;

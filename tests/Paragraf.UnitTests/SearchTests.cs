@@ -63,3 +63,33 @@ public class SearchTests
         Assert.Equal("art. 151¹ § 1", overtime.Citation);
     }
 }
+
+public class Bm25Tests
+{
+    [Fact]
+    public void A_rare_term_outweighs_common_ones()
+    {
+        var index = new Bm25Index([
+            ("a", "pracownik pracodawca pracownik pracodawca wynagrodzenie"),
+            ("b", "pracownik mobbing"),
+            ("c", "pracodawca urlop"),
+        ]);
+        Assert.Equal("b", index.Search("pracownik pracodawca mobbing", 3)[0].Id);
+    }
+
+    [Fact]
+    public void Filter_excludes_chunks_not_in_force()
+    {
+        var index = new Bm25Index([("old", "zadośćuczynienie odszkodowanie"), ("new", "zadośćuczynienie")]);
+        Assert.Equal(["new"], index.Search("zadośćuczynienie", 5, id => id == "new").Select(h => h.Id));
+    }
+
+    [Fact]
+    public void Finds_the_leave_article_in_the_real_code()
+    {
+        var chunks = Chunker.Chunk(KodeksPracy.Act);
+        var index = new Bm25Index(chunks.Select(c => (c.Id, c.Content)));
+        var top = index.Search("wymiar urlopu wypoczynkowego 20 dni 26 dni", 3).Select(h => h.Id).ToList();
+        Assert.Contains("154§1", top);
+    }
+}

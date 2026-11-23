@@ -1,16 +1,14 @@
 using Dapper;
 using Npgsql;
 using Paragraf.Core.Law;
-using Paragraf.Core.Search;
 using Pgvector;
 using Pgvector.Dapper;
 
 namespace Paragraf.Rag;
 
 /// <summary>
-/// Chunks of the act in PostgreSQL: the text, its embedding (pgvector, HNSW index) and its lexical
-/// terms (a tsvector over <see cref="LexicalTerms"/>), so both halves of the hybrid search are one
-/// SQL query each and filter by the date the same way.
+/// Chunks of the act in PostgreSQL with their embeddings (pgvector, HNSW index, cosine distance),
+/// searched with the date filter in the same query.
 /// </summary>
 public sealed class ChunkStore(NpgsqlDataSource dataSource)
 {
@@ -25,13 +23,15 @@ public sealed class ChunkStore(NpgsqlDataSource dataSource)
         return builder.Build();
     }
 
-    public async Task EnsureSchemaAsync(CancellationToken ct = default)
+    /// <summary>Chunks are derived data: each ingestion drops and recreates their table, so the schema follows the code.</summary>
+    public async Task RecreateSchemaAsync(CancellationToken ct = default)
     {
         await using var connection = await dataSource.OpenConnectionAsync(ct);
         await connection.ExecuteAsync("create extension if not exists vector");
         await connection.ReloadTypesAsync(ct);
         await connection.ExecuteAsync($"""
-            create table if not exists chunks (
+            drop table if exists chunks;
+            create table chunks (
                 id          text primary key,
                 act         text not null,
                 article     text not null,
@@ -41,11 +41,9 @@ public sealed class ChunkStore(NpgsqlDataSource dataSource)
                 citation    text not null,
                 headings    text not null,
                 body        text not null,
-                terms       tsvector not null,
                 embedding   vector({Dimensions}) not null
             );
-            create index if not exists chunks_embedding on chunks using hnsw (embedding vector_cosine_ops);
-            create index if not exists chunks_terms on chunks using gin (terms);
+            create index chunks_embedding on chunks using hnsw (embedding vector_cosine_ops);
             create table if not exists ingestions (
                 id              bigint generated always as identity primary key,
                 act             text not null,
@@ -65,15 +63,14 @@ public sealed class ChunkStore(NpgsqlDataSource dataSource)
         foreach (var (chunk, embedding) in rows)
         {
             await connection.ExecuteAsync("""
-                insert into chunks (id, act, article, paragraph, valid_from, valid_until, citation, headings, body, terms, embedding)
-                values (@Id, @Act, @Article, @Paragraph, @From, @Until, @Citation, @Headings, @Body, to_tsvector('simple', @Terms), @Embedding)
+                insert into chunks (id, act, article, paragraph, valid_from, valid_until, citation, headings, body, embedding)
+                values (@Id, @Act, @Article, @Paragraph, @From, @Until, @Citation, @Headings, @Body, @Embedding)
                 """,
                 new
                 {
                     chunk.Id, Act = act, chunk.Article, chunk.Paragraph,
                     From = chunk.Validity.From, Until = chunk.Validity.Until,
                     chunk.Citation, chunk.Headings, chunk.Body,
-                    Terms = LexicalTerms.Document(chunk.Content),
                     Embedding = new Vector(embedding),
                 }, tx);
         }
@@ -99,22 +96,6 @@ public sealed class ChunkStore(NpgsqlDataSource dataSource)
             order by embedding <=> @embedding
             limit @limit
             """, new { act, embedding = new Vector(embedding), date, limit }, tx);
-        return hits.ToList();
-    }
-
-    public async Task<IReadOnlyList<Hit>> LexicalAsync(string act, IReadOnlyList<string> terms, DateOnly date, int limit, CancellationToken ct = default)
-    {
-        if (terms.Count == 0) return [];
-        // Terms are letters and digits only (LexicalTerms), so joining them with | is a safe tsquery.
-        var query = string.Join(" | ", terms.Distinct());
-        await using var connection = await dataSource.OpenConnectionAsync(ct);
-        var hits = await connection.QueryAsync<Hit>($"""
-            select id, article, paragraph, ts_rank_cd(terms, q)::float8 as score
-            from chunks, to_tsquery('simple', @query) q
-            where act = @act and {InForce} and terms @@ q
-            order by score desc, id
-            limit @limit
-            """, new { act, query, date, limit });
         return hits.ToList();
     }
 

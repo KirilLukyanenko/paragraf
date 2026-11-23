@@ -1,0 +1,15 @@
+# Local PostgreSQL with pgvector for development and evals.
+# The password comes from .env (not in git): PARAGRAF_DB_PASSWORD=...
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: paragraf
+      POSTGRES_DB: paragraf
+      POSTGRES_PASSWORD: ${PARAGRAF_DB_PASSWORD:?set PARAGRAF_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5442:5432"
+    volumes:
+      - paragraf-db:/var/lib/postgresql/data
+volumes:
+  paragraf-db:
