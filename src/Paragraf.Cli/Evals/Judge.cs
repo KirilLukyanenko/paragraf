@@ -10,8 +10,10 @@ namespace Paragraf.Cli.Evals;
 public sealed record Verdict(
     [property: JsonPropertyName("points"), Description("One entry per expected point, in the given order.")]
     IReadOnlyList<PointVerdict> Points,
-    [property: JsonPropertyName("unsupported_claims"), Description("Statements of law or numbers in the answer that the sources don't support. Empty if none.")]
-    IReadOnlyList<string> UnsupportedClaims);
+    [property: JsonPropertyName("contradicted_claims"), Description("Statements in the answer that the sources contradict: a wrong number, period, condition or rule. Empty if none.")]
+    IReadOnlyList<string> ContradictedClaims,
+    [property: JsonPropertyName("outside_claims"), Description("Statements of law in the answer that the sources neither support nor contradict (added from outside knowledge). Empty if none.")]
+    IReadOnlyList<string> OutsideClaims);
 
 public sealed record PointVerdict(
     [property: JsonPropertyName("met")] bool Met,
@@ -34,9 +36,13 @@ public sealed class Judge(IChatClient chat, string model)
         A point about behaviour ("says the code does not regulate X", "does not invent a percentage") is met when
         the answer behaves that way.
 
-        Then list unsupported claims: statements of law, periods, amounts or percentages in the answer that the
-        sources do not support. Arithmetic done correctly from a rule in the sources is supported. General advice
-        ("consult a lawyer") is not a claim. Be strict about numbers and conditions, lenient about wording.
+        Then check the answer's statements of law, periods, amounts and percentages against the sources:
+        - contradicted_claims: the sources say otherwise (a wrong number, period, condition or rule).
+        - outside_claims: the sources neither say nor contradict it; it comes from outside knowledge.
+        A statement that follows from the sources by plain reading or by correct arithmetic is supported, and so is
+        a fair summary in other words. General advice ("check your contract", "consult a lawyer") and statements
+        that the sources do not settle a point are not claims. Be strict about numbers and conditions, lenient
+        about wording.
         """;
 
     public async Task<(Verdict? Verdict, UsageDetails? Usage)> GradeAsync(EvalQuestion q, Answer answer, CancellationToken ct)

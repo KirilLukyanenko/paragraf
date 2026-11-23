@@ -64,6 +64,10 @@ public sealed class Answerer(IChatClient chat, LawLibrary library)
         Rules:
         - Use only the articles inside <sources>. They are the law as it reads on the date given there. Do not use
           other knowledge of Polish law, older versions of the code, or other acts, even if you know them.
+        - Every statement about the law in your answer must be backed by the sources. Do not add rules from
+          elsewhere, even well-known ones: how deadlines are counted, what work regulations or collective
+          agreements usually say, rules of the Civil Code or of social insurance. If the answer depends on such a
+          rule, say that the sources given do not settle that point.
         - Cite every article and paragraph your answer relies on, with the exact words you rely on. A citation is
           checked by a program: the quote must be copied from that unit, not paraphrased.
         - status "answered": the sources answer the question, fully or in part (then say what is not covered).

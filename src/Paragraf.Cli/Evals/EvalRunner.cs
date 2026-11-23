@@ -40,7 +40,8 @@ public sealed record QuestionResult
     public bool? Grounded { get; init; }
     public int? PointsMet { get; init; }
     public int? Points { get; init; }
-    public IReadOnlyList<string> UnsupportedClaims { get; init; } = [];
+    public IReadOnlyList<string> ContradictedClaims { get; init; } = [];
+    public IReadOnlyList<string> OutsideClaims { get; init; } = [];
     public string? Answer { get; init; }
     public decimal CostUsd { get; init; }
     public double RetrievalMs { get; init; }
@@ -62,7 +63,8 @@ public sealed record RunSummary
     public double? CitationRecall { get; init; }
     public double? GroundedRate { get; init; }
     public double? PointsMetRate { get; init; }
-    public double? AnswersWithUnsupportedClaims { get; init; }
+    public double? AnswersContradictingSources { get; init; }
+    public double? AnswersWithOutsideClaims { get; init; }
     public decimal CostUsd { get; init; }
     public decimal CostPerQuestionUsd { get; init; }
     public double LatencyP50Ms { get; init; }
@@ -137,7 +139,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
                 Grounded = answer.Grounded,
                 PointsMet = verdict?.Points.Count(p => p.Met),
                 Points = verdict is null ? null : q.AnswerPoints.Count,
-                UnsupportedClaims = verdict?.UnsupportedClaims ?? [],
+                ContradictedClaims = verdict?.ContradictedClaims ?? [],
+                OutsideClaims = verdict?.OutsideClaims ?? [],
                 Answer = answer.Text,
                 CostUsd = cost,
                 GenerationMs = answer.GenerationTime.TotalMilliseconds,
@@ -174,7 +177,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
             CitationRecall = Avg(answered.Where(x => x.CitationRecall is not null).Select(x => x.CitationRecall!.Value)),
             GroundedRate = Avg(answered.Select(x => x.Grounded == true ? 1.0 : 0.0)),
             PointsMetRate = answered.Sum(x => x.Points ?? 0) == 0 ? null : answered.Sum(x => x.PointsMet ?? 0) / (double)answered.Sum(x => x.Points ?? 0),
-            AnswersWithUnsupportedClaims = answered.Count == 0 ? null : answered.Count(x => x.UnsupportedClaims.Count > 0) / (double)answered.Count,
+            AnswersContradictingSources = answered.Count == 0 ? null : answered.Count(x => x.ContradictedClaims.Count > 0) / (double)answered.Count,
+            AnswersWithOutsideClaims = answered.Count == 0 ? null : answered.Count(x => x.OutsideClaims.Count > 0) / (double)answered.Count,
             CostUsd = Math.Round(cost, 4),
             CostPerQuestionUsd = r.Count == 0 ? 0 : Math.Round(cost / r.Count, 4),
             LatencyP50Ms = Percentile(latencies, 0.5),
@@ -229,7 +233,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
             sb.AppendLine($"| Citation recall (expected articles cited and verified) | {P(s.CitationRecall)} |");
             sb.AppendLine($"| Grounded answers (every citation verified, at least one) | {P(s.GroundedRate)} |");
             sb.AppendLine($"| Expected points made (judge) | {P(s.PointsMetRate)} |");
-            sb.AppendLine($"| Answers with an unsupported claim (judge) | {P(s.AnswersWithUnsupportedClaims)} |");
+            sb.AppendLine($"| Answers contradicting the sources (judge) | {P(s.AnswersContradictingSources)} |");
+            sb.AppendLine($"| Answers adding law from outside the sources (judge) | {P(s.AnswersWithOutsideClaims)} |");
         }
         sb.AppendLine($"| Cost | ${s.CostUsd:0.00} (${s.CostPerQuestionUsd:0.0000} per question) |");
         sb.AppendLine($"| Latency p50 / p95 | {s.LatencyP50Ms / 1000:0.0} s / {s.LatencyP95Ms / 1000:0.0} s |");
@@ -239,7 +244,7 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
         {
             sb.AppendLine($"| {category} | {c.Questions} | {P(c.RetrievalRecall)} | {P(c.StatusAccuracy)} | {P(c.PointsMetRate)} | {P(c.GroundedRate)} |");
         }
-        var misses = results.Where(r => r.RetrievalRecall is < 1.0 || r.StatusOk == false || r.Grounded == false || r.UnsupportedClaims.Count > 0 || r.Error is not null).ToList();
+        var misses = results.Where(r => r.RetrievalRecall is < 1.0 || r.StatusOk == false || r.Grounded == false || r.ContradictedClaims.Count > 0 || r.OutsideClaims.Count > 0 || r.Error is not null).ToList();
         if (misses.Count > 0)
         {
             sb.AppendLine().AppendLine("## Misses").AppendLine();
@@ -250,7 +255,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, IChatClie
                 if (r.RetrievalRecall is < 1.0) why.Add($"retrieved {string.Join(", ", r.Retrieved)}; expected {string.Join(", ", r.Expected)}");
                 if (r.StatusOk == false) why.Add($"status {r.Status}");
                 if (r.Grounded == false) why.Add($"citations: {string.Join("; ", r.CitationProblems.DefaultIfEmpty("none given"))}");
-                if (r.UnsupportedClaims.Count > 0) why.Add($"unsupported: {string.Join(" | ", r.UnsupportedClaims)}");
+                if (r.ContradictedClaims.Count > 0) why.Add($"CONTRADICTS: {string.Join(" | ", r.ContradictedClaims)}");
+                if (r.OutsideClaims.Count > 0) why.Add($"outside: {string.Join(" | ", r.OutsideClaims)}");
                 sb.AppendLine($"- **{r.Id}** ({r.Category}, {r.Lang}): {string.Join(". ", why)}");
             }
         }
