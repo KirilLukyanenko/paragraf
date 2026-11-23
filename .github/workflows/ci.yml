@@ -24,6 +24,8 @@ jobs:
           dotnet-version: "10.0.x"
       - run: dotnet build Paragraf.slnx -warnaserror
       - run: dotnet test tests/Paragraf.UnitTests --no-build
+      - name: Integration tests (PostgreSQL + pgvector in Testcontainers)
+        run: dotnet test tests/Paragraf.IntegrationTests --no-build
 
   docker:
     runs-on: ubuntu-latest

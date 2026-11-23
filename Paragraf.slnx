@@ -6,6 +6,7 @@
     <Project Path="src/Paragraf.Rag/Paragraf.Rag.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Paragraf.IntegrationTests/Paragraf.IntegrationTests.csproj" />
     <Project Path="tests/Paragraf.UnitTests/Paragraf.UnitTests.csproj" />
   </Folder>
 </Solution>
