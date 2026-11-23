@@ -65,10 +65,10 @@ jobs:
       - name: Ingest
         if: steps.keys.outputs.ok == 'true'
         run: dotnet run --project src/Paragraf.Cli -- ingest
-      - name: Retrieval eval (gate: recall 95%)
+      - name: "Retrieval eval (gate: recall 95%)"
         if: steps.keys.outputs.ok == 'true'
         run: dotnet run --project src/Paragraf.Cli -- eval --retrieval-only --name ci-retrieval --min-recall 0.95
-      - name: Answer eval (gates: status 90%, grounded 90%)
+      - name: "Answer eval (gates: status 90%, grounded 90%)"
         if: steps.keys.outputs.ok == 'true' && github.event_name == 'workflow_dispatch' && inputs.answers
         run: dotnet run --project src/Paragraf.Cli -- eval --name ci-answers --min-status 0.90 --min-grounded 0.90
       - uses: actions/upload-artifact@v4
