@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Anthropic" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
+    <PackageReference Include="Npgsql" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Pgvector" />
+    <PackageReference Include="Pgvector.Dapper" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Paragraf.Core\Paragraf.Core.csproj" />
+  </ItemGroup>
+</Project>

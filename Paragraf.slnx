@@ -3,6 +3,7 @@
     <Project Path="src/Paragraf.Api/Paragraf.Api.csproj" />
     <Project Path="src/Paragraf.Cli/Paragraf.Cli.csproj" />
     <Project Path="src/Paragraf.Core/Paragraf.Core.csproj" />
+    <Project Path="src/Paragraf.Rag/Paragraf.Rag.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Paragraf.UnitTests/Paragraf.UnitTests.csproj" />

@@ -133,3 +133,50 @@ public class LawParserTests
             InForce("154").Render(Today).Split("\n§ 2.")[0]);
     }
 }
+
+public class LawParserEdgeCaseTests
+{
+    private static readonly DateOnly Today = new(2026, 11, 23);
+    private static Article InForce(string number) => KodeksPracy.Act.Find(UnitNumber.Parse(number), Today)!;
+
+    [Fact]
+    public void A_footnote_continued_on_the_next_page_stays_out_of_the_article()
+    {
+        var text = InForce("3^1").Render(Today);
+        Assert.DoesNotContain("dyrektywy", text);
+        Assert.EndsWith("czynności, o których mowa w tym przepisie.", text);
+    }
+
+    [Fact]
+    public void Hours_printed_with_superscript_minutes_read_as_times()
+    {
+        Assert.Contains("między godzinami 21:00 a 7:00", InForce("151^7").Render(Today));
+        Assert.Contains("pomiędzy godzinami 22:00 a 6:00", InForce("203").Render(Today));
+    }
+
+    [Fact]
+    public void A_removed_range_of_articles_does_not_attach_to_the_previous_article()
+    {
+        Assert.DoesNotContain("266", InForce("265").Render(Today));
+        Assert.Null(KodeksPracy.Act.Find(UnitNumber.Parse("270"), Today));
+    }
+
+    [Fact]
+    public void Lapsed_units_are_marked_like_repealed_ones() => Assert.True(InForce("103").Repealed);
+
+    [Fact]
+    public void References_to_superscript_articles_read_with_superscripts() =>
+        Assert.Contains("na zasadach określonych w art. 23¹", InForce("36").Render(Today));
+
+    [Fact]
+    public void Every_article_number_in_the_text_is_parsed()
+    {
+        var inText = System.Text.RegularExpressions.Regex.Matches(KodeksPracy.Text, @"^\s*Art\. (\d+)(?:\[([0-9a-z]+)\])?\.", System.Text.RegularExpressions.RegexOptions.Multiline)
+            .Select(m => new UnitNumber(int.Parse(m.Groups[1].Value), m.Groups[2].Success ? m.Groups[2].Value : null).ToString())
+            .ToHashSet();
+        var parsed = KodeksPracy.Act.Articles.Select(a => a.Key).ToHashSet();
+        // Article numbers at the start of a line before the act begins (in the announcement) don't count.
+        var missing = inText.Except(parsed).Where(k => UnitNumber.Parse(k).Main > 2).ToList();
+        Assert.Empty(missing);
+    }
+}

@@ -28,6 +28,7 @@ public static partial class DziennikUstawText
         var footnotes = new Dictionary<int, string>();
         var referenced = new HashSet<int>();
         var next = 1;
+        var lastBodyLine = "";
 
         foreach (var page in pages.Skip(first))
         {
@@ -46,6 +47,15 @@ public static partial class DziennikUstawText
                     footnotes[current] = opener.Groups[2].Value.Trim();
                     continue;
                 }
+                if (current < 0 && opener.Success && next > 1 && lastBodyLine.EndsWith('.')
+                    && int.Parse(opener.Groups[1].Value) == LastListItem(footnotes[next - 1]) + 1)
+                {
+                    // A long footnote continued from the previous page: its own list goes on ("21) dyrektywy …"
+                    // after "20) …") right after a finished sentence of the act.
+                    current = next - 1;
+                    footnotes[current] = JoinLine(footnotes[current], line.Trim());
+                    continue;
+                }
                 if (current >= 0)
                 {
                     // Inside the footnote block every remaining line on the page belongs to a footnote.
@@ -57,10 +67,21 @@ public static partial class DziennikUstawText
                     referenced.Add(int.Parse(marker.Groups[1].Value));
                 }
                 body.Add(line);
+                if (line.Trim().Length > 0) lastBodyLine = line.TrimEnd();
             }
         }
         return new Split(body, footnotes);
     }
+
+    /// <summary>The number of the last item of a list inside a footnote ("… 20) dyrektywy …" → 20), or -1.</summary>
+    private static int LastListItem(string footnote)
+    {
+        var items = FootnoteListItem().Matches(footnote);
+        return items.Count == 0 ? -1 : int.Parse(items[^1].Groups[1].Value);
+    }
+
+    [GeneratedRegex(@"(?:^|\s)(\d{1,3})\)\s")]
+    private static partial Regex FootnoteListItem();
 
     private static int FirstLineOf(string[] lines, string marker) =>
         Math.Max(0, Array.FindIndex(lines, l => l.Contains(marker, StringComparison.Ordinal)));

@@ -30,6 +30,12 @@ public static partial class LawParser
                 builder.StartHeading(heading.Groups["level"].Value, trimmed);
                 continue;
             }
+            if (ArticleRange().IsMatch(line))
+            {
+                // "Art. 266–280." — a range of articles removed from the code; nothing to keep.
+                builder.SkipRange();
+                continue;
+            }
             if (ArticleStart().Match(line) is { Success: true } article
                 && UnitNumber.TryParse(Number(article), out var articleNumber)
                 && builder.AcceptsArticle(articleNumber))
@@ -69,6 +75,18 @@ public static partial class LawParser
     /// <summary><c>§ 2[1].5) Pracodawca …</c></summary>
     [GeneratedRegex(@"^\s*§\s(?<main>\d{1,3})(?:\[(?<sup>[0-9]{1,2}[a-z]{0,2})\])?\.(?:(?<fn>\d{1,3})\))?\s*(?<rest>.*)$")]
     private static partial Regex ParagraphStart();
+
+    [GeneratedRegex(@"^\s*Art\.\s\d{1,4}\s*[–-]\s*\d{1,4}\.")]
+    private static partial Regex ArticleRange();
+
+    [GeneratedRegex(@"(godzin\p{L}*\s+)([01]?\d|2[0-4])00\b")]
+    private static partial Regex HourAfterGodzina();
+
+    [GeneratedRegex(@"(\d{1,2}:00\s+a\s+)([01]?\d|2[0-4])00\b")]
+    private static partial Regex SecondHour();
+
+    [GeneratedRegex(@"(\d{1,4})\[([0-9]{1,2}[a-z]{0,2})\]")]
+    private static partial Regex BracketSuperscript();
 
     [GeneratedRegex(@"^(?<level>DZIAŁ|Rozdział|Oddział)\s+[\p{L}\d]+$")]
     private static partial Regex HeadingPattern();
@@ -132,6 +150,12 @@ public static partial class LawParser
             _articleHeadings = _headings.Where(h => h is not null).Select(h => h!).ToArray();
         }
 
+        public void SkipRange()
+        {
+            FlushArticle();
+            _headingLevel = -1;
+        }
+
         public void StartParagraph(UnitNumber number, int? marker)
         {
             FlushParagraph();
@@ -184,8 +208,17 @@ public static partial class LawParser
         }
 
         /// <summary>Removes footnote markers left inside the text (<c>pracy1)</c> → <c>pracy</c>).</summary>
-        private string StripMarkers(string text) => DziennikUstawText.GluedMarker().Replace(text,
-            m => footnoteNumbers.Contains(int.Parse(m.Groups[1].Value)) ? "" : m.Value);
+        private string StripMarkers(string text)
+        {
+            var stripped = DziennikUstawText.GluedMarker().Replace(text,
+                m => footnoteNumbers.Contains(int.Parse(m.Groups[1].Value)) ? "" : m.Value);
+            // References to other units keep the PDF's bracket form "art. 23[1]"; show them as people write them.
+            stripped = BracketSuperscript().Replace(stripped,
+                m => new UnitNumber(int.Parse(m.Groups[1].Value), m.Groups[2].Value).ToDisplay());
+            // Hours are printed with superscript minutes (21⁰⁰), which the extraction flattens to "2100".
+            stripped = HourAfterGodzina().Replace(stripped, "$1$2:00");
+            return SecondHour().Replace(stripped, "$1$2:00");
+        }
 
         private void FlushParagraph()
         {
@@ -216,7 +249,8 @@ public static partial class LawParser
             _lead = "";
         }
 
-        private static bool IsRepealed(string text) => text is "(uchylony)" or "(uchylona)" or "(uchylone)";
+        private static bool IsRepealed(string text) =>
+            text is "(uchylony)" or "(uchylona)" or "(uchylone)" or "(utracił moc)" or "(utraciła moc)" or "(utraciły moc)";
 
         public IReadOnlyList<Article> Finish()
         {
