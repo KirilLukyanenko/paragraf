@@ -107,6 +107,64 @@ public sealed class CalculationTests
     }
 
     [Theory]
+    [InlineData(11, 0, Education.None, 26)]           // years with every employer count (art. 154¹)
+    [InlineData(2, 0, Education.Higher, 26)]          // 2 + 8 for a degree = 10
+    [InlineData(1, 11, Education.Higher, 20)]         // 9 years 11 months
+    [InlineData(5, 0, Education.SecondaryGeneral, 20)]
+    [InlineData(5, 0, Education.PostSecondary, 26)]
+    public void Annual_leave_is_20_or_26_days_by_years_with_school_counted(int years, int months, Education education, int days) =>
+        Assert.Equal(days, LabourCalculations.Leave(years, months, education).Days);
+
+    [Theory]
+    [InlineData(0.5, 26, 13)]
+    [InlineData(0.75, 20, 15)]
+    [InlineData(0.6, 26, 16)] // 15.6 rounds up (art. 154 § 2)
+    public void Part_time_leave_is_pro_rata_rounded_up(double fraction, int fullTime, int days)
+    {
+        var leave = LabourCalculations.Leave(fullTime == 26 ? 10 : 1, 0, Education.None, (decimal)fraction);
+        Assert.Equal(days, leave.Days);
+        Assert.Equal(days * 8, leave.Hours);
+    }
+
+    [Fact]
+    public void Leave_for_part_of_a_year_counts_months_and_rounds_up()
+    {
+        // Leaving on 15 May: January to May is 5 months, a part month counted whole; 26 × 5/12 = 10.83 → 11.
+        var leaving = LabourCalculations.Leave(12, 0, Education.None, workedUntil: new DateOnly(2026, 5, 15));
+        Assert.Equal(5, leaving.ProportionalMonths);
+        Assert.Equal(11, leaving.ProportionalDays);
+
+        // Starting on 20 September for the rest of the year: 4 months; 20 × 4/12 = 6.67 → 7.
+        var joining = LabourCalculations.Leave(3, 0, Education.None, workedFrom: new DateOnly(2026, 9, 20));
+        Assert.Equal(4, joining.ProportionalMonths);
+        Assert.Equal(7, joining.ProportionalDays);
+        Assert.Contains(joining.Basis, b => b.Article == "155^1");
+    }
+
+    [Fact]
+    public void Every_unit_a_calculation_applies_exists_in_the_code_today()
+    {
+        var today = new DateOnly(2026, 11, 23);
+        var bases = new[]
+        {
+            LabourCalculations.WorkingTime(2026, 3).Basis,
+            LabourCalculations.Notice(new DateOnly(2020, 1, 1), today).Basis,
+            LabourCalculations.Overtime(10_000m, "PLN", 2026, 3, 1, 1).Basis,
+            LabourCalculations.NonCompete(10_000m, "PLN", 6).Basis,
+            LabourCalculations.Deductions(5_000m, 4_000m).Basis,
+            LabourCalculations.Leave(5, 0, Education.Higher, 0.5m, workedUntil: today).Basis,
+        }.SelectMany(b => b);
+        foreach (var unit in bases)
+        {
+            var article = KodeksPracy.Act.Find(Paragraf.Core.Law.UnitNumber.Parse(unit.Article), today);
+            Assert.True(article is not null, $"art. {unit.Article}");
+            if (unit.Paragraph is null) continue;
+            var paragraph = Paragraf.Core.Law.UnitNumber.Parse(unit.Paragraph);
+            Assert.True(article!.ParagraphsOn(today).Any(p => p.Number == paragraph && !p.Repealed), $"art. {unit.Article} § {unit.Paragraph}");
+        }
+    }
+
+    [Theory]
     [InlineData("Dodatek wynosi 1 840,00 zł.", 1840.00)]
     [InlineData("The total is PLN 1,840.00 gross.", 1840.00)]
     [InlineData("Stawka: 80 zł za godzinę", 80)]

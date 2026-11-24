@@ -38,11 +38,13 @@ public sealed record PayrollResult(
     IReadOnlyList<string> MissingText,
     IReadOnlyList<string> MissingArticles,
     bool CitationsVerified,
+    bool LanguageOk,
+    bool LanguageRewritten,
     decimal CostUsd,
     double Seconds,
     string? Error)
 {
-    public bool Correct => Error is null && ToolsOk && MissingAmounts.Count == 0 && UnverifiedAmounts.Count == 0 && MissingText.Count == 0;
+    public bool Correct => Error is null && ToolsOk && MissingAmounts.Count == 0 && UnverifiedAmounts.Count == 0 && MissingText.Count == 0 && LanguageOk;
 }
 
 public sealed record PayrollSummary(
@@ -55,6 +57,8 @@ public sealed record PayrollSummary(
     double AmountsGrounded,
     double CitationsVerified,
     double ArticlesCited,
+    double LanguageCorrect,
+    int LanguageRewrites,
     decimal CostUsd,
     decimal CostPerQuestion,
     double P50Seconds,
@@ -94,6 +98,8 @@ public static class PayrollEval
             Share(r => r.Error is null && r.UnverifiedAmounts.Count == 0),
             Share(r => r.Error is null && r.CitationsVerified),
             Share(r => r.Error is null && r.MissingArticles.Count == 0),
+            Share(r => r.Error is null && r.LanguageOk),
+            results.Count(r => r.LanguageRewritten),
             cost, cost / n, seconds.Count == 0 ? 0 : seconds[seconds.Count / 2], results.Count(r => r.Error is not null));
         return (summary, results);
     }
@@ -118,11 +124,12 @@ public static class PayrollEval
             var missingArticles = q.ExpectedArticles.Where(a => !cited.Contains(a)).ToList();
             var cost = answer.CostUsd + Pricing.Cost(settings.RewriteModel, answer.Retrieval.RewriteUsage);
             return new PayrollResult(q.Id, q.Category, q.Question, answer.Status.ToString(), answer.Text, called, toolsOk,
-                missingAmounts, unverified, missingText, missingArticles, answer.Citations.All(c => c.Verified), cost, watch.Elapsed.TotalSeconds, null);
+                missingAmounts, unverified, missingText, missingArticles, answer.Citations.All(c => c.Verified),
+                answer.Language?.Matches ?? true, answer.Language?.Rewritten == true, cost, watch.Elapsed.TotalSeconds, null);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return new PayrollResult(q.Id, q.Category, q.Question, null, null, [], false, [], [], [], [], false, 0, watch.Elapsed.TotalSeconds,
+            return new PayrollResult(q.Id, q.Category, q.Question, null, null, [], false, [], [], [], [], false, false, false, 0, watch.Elapsed.TotalSeconds,
                 $"{ex.GetType().Name}: {ex.Message}");
         }
     }
@@ -142,9 +149,9 @@ public static class PayrollEval
         sb.AppendLine();
         sb.AppendLine($"Answer model {s.Model}, {s.Questions} questions, ${s.CostUsd:0.00} (${s.CostPerQuestion:0.000} a question), p50 {s.P50Seconds:0.0} s.");
         sb.AppendLine();
-        sb.AppendLine("| Correct | Right tools | Expected amounts and dates | Amounts from tools | Citations verified | Expected articles cited |");
-        sb.AppendLine("|---|---|---|---|---|---|");
-        sb.AppendLine($"| {P(s.Correct)} | {P(s.ToolsCorrect)} | {P(s.AmountsCorrect)} | {P(s.AmountsGrounded)} | {P(s.CitationsVerified)} | {P(s.ArticlesCited)} |");
+        sb.AppendLine("| Correct | Right tools | Expected amounts and dates | Amounts from tools | Citations verified | Expected articles cited | Question's language |");
+        sb.AppendLine("|---|---|---|---|---|---|---|");
+        sb.AppendLine($"| {P(s.Correct)} | {P(s.ToolsCorrect)} | {P(s.AmountsCorrect)} | {P(s.AmountsGrounded)} | {P(s.CitationsVerified)} | {P(s.ArticlesCited)} | {P(s.LanguageCorrect)} ({s.LanguageRewrites} written again) |");
         sb.AppendLine();
         sb.AppendLine("| Id | Category | Result | Tools | Problems |");
         sb.AppendLine("|---|---|---|---|---|");
@@ -158,6 +165,8 @@ public static class PayrollEval
             if (r.MissingText.Count > 0) problems.Add("missing " + string.Join(", ", r.MissingText));
             if (r.MissingArticles.Count > 0) problems.Add("not cited: art. " + string.Join(", ", r.MissingArticles));
             if (!r.CitationsVerified) problems.Add("a citation failed the check");
+            if (!r.LanguageOk) problems.Add("answer not in the question's language");
+            if (r.LanguageRewritten) problems.Add("written again in the question's language");
             sb.AppendLine($"| {r.Id} | {r.Category} | {(r.Correct ? "correct" : "**miss**")} | {string.Join(", ", r.ToolsCalled)} | {string.Join("; ", problems)} |");
         }
         sb.AppendLine();

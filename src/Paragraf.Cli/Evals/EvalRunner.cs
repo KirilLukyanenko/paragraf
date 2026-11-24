@@ -39,6 +39,10 @@ public sealed record QuestionResult
     public double? CitationRecall { get; init; }
     public bool? Grounded { get; init; }
     public IReadOnlyList<string> ToolsCalled { get; init; } = [];
+    /// <summary>The final answer is in the question's language (as code detects it).</summary>
+    public bool? LanguageOk { get; init; }
+    /// <summary>The first answer was in another language and was written again.</summary>
+    public bool LanguageRewritten { get; init; }
     public int? PointsMet { get; init; }
     public int? Points { get; init; }
     public IReadOnlyList<string> ContradictedClaims { get; init; } = [];
@@ -63,6 +67,8 @@ public sealed record RunSummary
     public double? CitationPrecision { get; init; }
     public double? CitationRecall { get; init; }
     public double? GroundedRate { get; init; }
+    public double? LanguageRate { get; init; }
+    public int LanguageRewrites { get; init; }
     public double? PointsMetRate { get; init; }
     public double? AnswersContradictingSources { get; init; }
     public double? AnswersWithOutsideClaims { get; init; }
@@ -140,6 +146,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, LawLibrar
                 CitationRecall = expected.Count == 0 ? null : expected.Count(citedArticles.Contains) / (double)expected.Count,
                 Grounded = answer.Grounded,
                 ToolsCalled = answer.ToolCalls.Select(c => c.Name).ToList(),
+                LanguageOk = answer.Language?.Matches,
+                LanguageRewritten = answer.Language?.Rewritten == true,
                 PointsMet = verdict?.Points.Count(p => p.Met),
                 Points = verdict is null ? null : q.AnswerPoints.Count,
                 ContradictedClaims = verdict?.ContradictedClaims ?? [],
@@ -179,6 +187,8 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, LawLibrar
             CitationPrecision = answered.Sum(x => x.Citations) == 0 ? null : answered.Sum(x => x.VerifiedCitations) / (double)answered.Sum(x => x.Citations),
             CitationRecall = Avg(answered.Where(x => x.CitationRecall is not null).Select(x => x.CitationRecall!.Value)),
             GroundedRate = Avg(answered.Select(x => x.Grounded == true ? 1.0 : 0.0)),
+            LanguageRate = Avg(answered.Where(x => x.LanguageOk is not null).Select(x => x.LanguageOk == true ? 1.0 : 0.0)),
+            LanguageRewrites = answered.Count(x => x.LanguageRewritten),
             PointsMetRate = answered.Sum(x => x.Points ?? 0) == 0 ? null : answered.Sum(x => x.PointsMet ?? 0) / (double)answered.Sum(x => x.Points ?? 0),
             AnswersContradictingSources = answered.Count == 0 ? null : answered.Count(x => x.ContradictedClaims.Count > 0) / (double)answered.Count,
             AnswersWithOutsideClaims = answered.Count == 0 ? null : answered.Count(x => x.OutsideClaims.Count > 0) / (double)answered.Count,
@@ -235,6 +245,10 @@ public sealed class EvalRunner(Retriever retriever, Answerer answerer, LawLibrar
             sb.AppendLine($"| Citation precision (citations verified by code) | {P(s.CitationPrecision)} |");
             sb.AppendLine($"| Citation recall (expected articles cited and verified) | {P(s.CitationRecall)} |");
             sb.AppendLine($"| Grounded answers (every citation verified, at least one) | {P(s.GroundedRate)} |");
+            if (s.LanguageRate is not null)
+            {
+                sb.AppendLine($"| Answers in the question's language (checked by code) | {P(s.LanguageRate)} ({s.LanguageRewrites} written again) |");
+            }
             sb.AppendLine($"| Expected points made (judge) | {P(s.PointsMetRate)} |");
             sb.AppendLine($"| Answers contradicting the sources (judge) | {P(s.AnswersContradictingSources)} |");
             sb.AppendLine($"| Answers adding law from outside the sources (judge) | {P(s.AnswersWithOutsideClaims)} |");

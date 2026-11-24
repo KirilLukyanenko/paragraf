@@ -63,6 +63,36 @@ public sealed record DeductionLimits(
     IReadOnlyList<LegalBasis> Basis,
     IReadOnlyList<string> Assumptions);
 
+/// <summary>The school completed, which art. 155 § 1 counts as years of work for leave.</summary>
+public enum Education
+{
+    None,
+    BasicVocational,
+    SecondaryVocational,
+    SecondaryVocationalAfterBasic,
+    SecondaryGeneral,
+    PostSecondary,
+    Higher,
+}
+
+/// <summary>Annual leave in days (art. 154, 154¹, 155, 155¹–155³).</summary>
+public sealed record AnnualLeave(
+    int WorkYears,
+    int WorkMonths,
+    string Education,
+    int EducationYears,
+    decimal YearsForLeave,
+    int FullTimeDays,
+    decimal TimeFraction,
+    int Days,
+    int Hours,
+    DateOnly? ProportionalFrom,
+    DateOnly? ProportionalUntil,
+    int? ProportionalMonths,
+    int? ProportionalDays,
+    IReadOnlyList<LegalBasis> Basis,
+    IReadOnlyList<string> Assumptions);
+
 /// <summary>
 /// Calculations the code sets out as rules: done by code, never by the model. Each result names the units it
 /// applies and every assumption that does not come from the code itself.
@@ -205,6 +235,63 @@ public static class LabourCalculations
                     : "Monetary penalties are limited to a tenth of the pay left after the deductions of art. 87 § 1 pkt 1–3, as given.",
                 "A single penalty may not exceed one day's pay (art. 108 § 3).",
             ]);
+    }
+
+    /// <summary>Years of school counted as work by art. 155 § 1 (not added up: the highest school completed counts).</summary>
+    public static int EducationYears(Education education) => education switch
+    {
+        Education.BasicVocational => 3,
+        Education.SecondaryVocational => 5,
+        Education.SecondaryVocationalAfterBasic => 5,
+        Education.SecondaryGeneral => 4,
+        Education.PostSecondary => 6,
+        Education.Higher => 8,
+        _ => 0,
+    };
+
+    /// <summary>
+    /// Art. 154 § 1: 20 days under 10 years, 26 from 10 years; art. 154¹: all previous employment counts; art. 155:
+    /// the school completed counts as years of work; art. 154 § 2: part-time pro rata, a part day rounded up.
+    /// With a period of work in the year (art. 155¹, 155²ᵃ, 155³): 1/12 for each calendar month, a part month and a
+    /// part day rounded up.
+    /// </summary>
+    public static AnnualLeave Leave(int workYears, int workMonths, Education education, decimal timeFraction = 1m,
+        DateOnly? workedFrom = null, DateOnly? workedUntil = null)
+    {
+        if (workYears < 0 || workMonths is < 0 or > 11) throw new ArgumentOutOfRangeException(nameof(workMonths), "Work is years (0 or more) and months (0 to 11).");
+        if (timeFraction is <= 0 or > 1) throw new ArgumentOutOfRangeException(nameof(timeFraction), "The fraction of full time is above 0 and at most 1.");
+        var school = EducationYears(education);
+        var years = workYears + workMonths / 12m + school;
+        var fullTime = years >= 10 ? 26 : 20;
+        var days = (int)Math.Ceiling(fullTime * timeFraction);
+
+        int? months = null, proportional = null;
+        if (workedFrom is not null || workedUntil is not null)
+        {
+            var from = workedFrom ?? new DateOnly((workedUntil ?? workedFrom)!.Value.Year, 1, 1);
+            var until = workedUntil ?? new DateOnly(from.Year, 12, 31);
+            if (until < from || until.Year != from.Year) throw new ArgumentException("The period of work must lie within one calendar year.");
+            months = until.Month - from.Month + 1;
+            proportional = (int)Math.Ceiling(days * months.Value / 12m);
+        }
+
+        var basis = new List<LegalBasis> { new("154", "1"), new("154^1", "1") };
+        if (school > 0) basis.Add(new("155", "1"));
+        if (timeFraction < 1) basis.Add(new("154", "2"));
+        if (months is not null) basis.AddRange([new("155^1", "1"), new("155^2a", "1"), new("155^2a", "2"), new("155^3", "1")]);
+        var assumptions = new List<string>
+        {
+            "Years of work include every previous employer, whatever the breaks (art. 154¹).",
+            "Years of school and of work are added as given; if the school was attended while working, only the more favourable of the two counts (art. 155 § 2), which the calculation does not check.",
+            "A year of work is the employee's right to leave in the following calendar years; in the very first job, leave is earned month by month (art. 153 § 1), which this does not calculate.",
+        };
+        if (months is not null)
+        {
+            assumptions.Add("Proportional leave: each calendar month of work in the year is 1/12 of the leave; a part month and a part day are rounded up.");
+            assumptions.Add("Leave already used before the employment ended is not taken into account (art. 155¹ § 1 pkt 1, § 2).");
+        }
+        return new AnnualLeave(workYears, workMonths, education.ToString(), school, years, fullTime, timeFraction, days,
+            days * 8, workedFrom, workedUntil, months, proportional, basis, assumptions);
     }
 
     /// <summary>Full years and months from the start date to the date (the start day counts as the first day).</summary>

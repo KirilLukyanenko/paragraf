@@ -51,8 +51,8 @@ public sealed class LabourTools(LawLibrary library, ICompensationSource? compens
     public const string Instructions = """
         Calculations:
         - You have tools that calculate by the rules of the code: the working-time norm of a month, the notice period
-          and its end, overtime pay, the minimum non-compete compensation, the limits of deductions from pay, and an
-          employee's pay from the payroll system (employees have ids like E-1001). Use them whenever the question asks
+          and its end, annual leave, overtime pay, the minimum non-compete compensation, the limits of deductions
+          from pay, and an employee's pay from the payroll system (employees have ids like E-1001). Use them whenever the question asks
           for an amount, a number of hours or a date that follows from a rule; do not compute these yourself.
         - Copy every amount and date from the tool results exactly, with its currency (for example 1 840,00 zł).
           A program checks that each amount of money in your answer came from a tool or from the question. Do not
@@ -136,6 +136,20 @@ public sealed class LabourTools(LawLibrary library, ICompensationSource? compens
                     Run("deduction_limits", new { net_pay, pay_after_deductions }, () => LabourCalculations.Deductions(net_pay, pay_after_deductions)),
                 "deduction_limits",
                 "The most that may be deducted from pay: alimony and other enforcement, advances (art. 87 § 3–4) and monetary penalties (art. 108 § 3)."),
+
+            AIFunctionFactory.Create(
+                ([Description("Full years of work with all employers, including previous ones.")] int work_years,
+                 [Description("Months of work beyond the full years, 0 to 11.")] int work_months = 0,
+                 [Description("The highest school completed: none, basic_vocational, secondary_vocational, secondary_vocational_after_basic, secondary_general, post_secondary or higher.")] string education = "none",
+                 [Description("Fraction of full time, for example 0.5 for half time; 1 for full time.")] decimal time_fraction = 1m,
+                 [Description("If the leave is for part of a year only: the first day of work in that year, yyyy-MM-dd.")] string? worked_from = null,
+                 [Description("If the leave is for part of a year only: the last day of work in that year, yyyy-MM-dd.")] string? worked_until = null) =>
+                    Run("annual_leave", new { work_years, work_months, education, time_fraction, worked_from, worked_until }, () =>
+                        LabourCalculations.Leave(work_years, work_months, ParseEducation(education), time_fraction,
+                            worked_from is null ? null : ParseDate(worked_from, nameof(worked_from)),
+                            worked_until is null ? null : ParseDate(worked_until, nameof(worked_until)))),
+                "annual_leave",
+                "Annual leave in days and hours: 20 or 26 days by years of work with school counted (art. 154, 154¹, 155), part time, and proportional leave for part of a year (art. 155¹–155³)."),
         };
 
         if (compensation is not null)
@@ -252,6 +266,11 @@ public sealed class LabourTools(LawLibrary library, ICompensationSource? compens
             ? $"Art. {found.Number.ToDisplay()} § {par.Number.ToDisplay()}. {par.Text}"
             : null;
     }
+
+    private static Education ParseEducation(string text) =>
+        Enum.TryParse<Education>(text.Replace("_", ""), ignoreCase: true, out var education)
+            ? education
+            : throw new ArgumentException($"Unknown education '{text}'.");
 
     private static DateOnly ParseDate(string text, string name) =>
         DateOnly.TryParseExact(text, "yyyy-MM-dd", out var date) ? date : throw new FormatException($"{name} must be a date as yyyy-MM-dd.");

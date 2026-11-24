@@ -192,7 +192,7 @@ $("ask").onsubmit = async e => {
         ${cites ? `<h2>Citations</h2>${cites}` : ""}
         <h2>Articles the model was given</h2><div class="sources">${sources}</div>
         <div class="meta">Law as of ${esc(body.as_of)} · ${esc(body.usage.model)} · ${(body.usage.retrieval_ms / 1000).toFixed(1)} s search,
-          ${(body.usage.answer_ms / 1000).toFixed(1)} s answer · $${body.usage.cost_usd.toFixed(4)}${body.search_query ? `<br>Search query: ${esc(body.search_query)}` : ""}</div>
+          ${(body.usage.answer_ms / 1000).toFixed(1)} s answer · $${body.usage.cost_usd.toFixed(4)}${body.language?.rewritten ? " · the first answer was in another language and was written again" : ""}${body.search_query ? `<br>Search query: ${esc(body.search_query)}` : ""}</div>
       </div>`;
     $("result").querySelectorAll("[data-article]").forEach(el => el.onclick = ev => { ev.preventDefault(); showArticle(el.dataset.article); });
     if (body.citations.length) showArticle(body.citations[0].article);

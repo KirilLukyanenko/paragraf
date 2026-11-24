@@ -121,11 +121,13 @@ public sealed record AskResponse(
     string? SearchQuery,
     IReadOnlyList<AskResponse.CalculationDto> Calculations,
     IReadOnlyList<AskResponse.AmountDto> Amounts,
+    AskResponse.LanguageDto? Language,
     AskResponse.UsageDto Usage,
     string? TraceId)
 {
     public sealed record CalculationDto(string Tool, JsonElement Arguments, JsonElement Result, bool Failed, double Ms);
     public sealed record AmountDto(string Text, decimal Value, bool Verified);
+    public sealed record LanguageDto(string? Question, string? Answer, bool Rewritten);
     public sealed record CitationDto(string Article, string? Paragraph, string? Display, string Quote, bool Verified, string? Problem);
     public sealed record SourceDto(string Article, string Display, string Location);
     public sealed record UsageDto(string Model, long? InputTokens, long? OutputTokens, decimal CostUsd, double RetrievalMs, double AnswerMs);
@@ -147,7 +149,11 @@ public sealed record AskResponse(
         a.Retrieval.Rewrite?.PolishQuery,
         a.ToolCalls.Select(c => new CalculationDto(c.Name, c.Arguments, c.Result, c.Failed, Math.Round(c.Elapsed.TotalMilliseconds))).ToList(),
         a.Amounts.Select(x => new AmountDto(x.Text, x.Value, x.Verified)).ToList(),
+        a.Language is { } l ? new LanguageDto(l.Question, l.Answer, l.Rewritten) : null,
         new UsageDto(a.Model, a.Usage?.InputTokenCount, a.Usage?.OutputTokenCount, Math.Round(cost, 5),
             Math.Round(a.Retrieval.Elapsed.TotalMilliseconds), Math.Round(a.GenerationTime.TotalMilliseconds)),
         traceId);
 }
+
+/// <summary>For WebApplicationFactory in the API tests.</summary>
+public partial class Program;

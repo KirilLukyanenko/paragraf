@@ -54,7 +54,8 @@ public sealed record Answer(
     decimal CostUsd,
     TimeSpan GenerationTime,
     IReadOnlyList<ToolCall> ToolCalls,
-    IReadOnlyList<CheckedAmount> Amounts)
+    IReadOnlyList<CheckedAmount> Amounts,
+    LanguageOutcome? Language = null)
 {
     /// <summary>
     /// An answer that claims to answer must stand on at least one verified citation, and on no false one; and every
@@ -62,6 +63,15 @@ public sealed record Answer(
     /// </summary>
     public bool Grounded => Status != AnswerStatus.Answered
         || (Citations.Count > 0 && Citations.All(c => c.Verified) && Amounts.All(a => a.Verified));
+}
+
+/// <summary>
+/// The question's language and the answer's, as code detects them, and whether the answer had to be written again.
+/// Null languages mean the text was too short or unclear to tell.
+/// </summary>
+public sealed record LanguageOutcome(string? Question, string? Answer, bool Rewritten)
+{
+    public bool Matches => Question is null || Answer is null || Question == Answer;
 }
 
 /// <summary>Writes the answer from the retrieved articles, then checks its citations by code.</summary>
@@ -111,21 +121,44 @@ public sealed class Answerer(IChatClient chat, LawLibrary library)
             Tools = tools?.Functions(),
         };
         var response = await chat.GetResponseAsync<ModelAnswer>(messages, options, cancellationToken: ct);
-        var cost = Pricing.Cost(settings.Model, response.Usage);
+        var usage = response.Usage ?? new UsageDetails();
 
         if (response.FinishReason == ChatFinishReason.ContentFilter || !response.TryGetResult(out var answer))
         {
-            return new Answer(AnswerStatus.Refused, response.Text, [], retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed,
-                tools?.Calls ?? [], []);
+            return new Answer(AnswerStatus.Refused, response.Text, [], retrieval, asOf, settings.Model, usage,
+                Pricing.Cost(settings.Model, usage), watch.Elapsed, tools?.Calls ?? [], []);
         }
+
+        // Code checks the answer's language. Models drift, most often after tool results that quote the Polish
+        // code: then the same conversation asks once for the answer again, in the question's language.
+        var language = new LanguageOutcome(LanguageCheck.Detect(question), LanguageCheck.Mismatch(question, answer.Answer)?.Actual, false);
+        if (language.Answer is { } wrong && language.Question is { } wanted)
+        {
+            messages.AddRange(response.Messages);
+            messages.Add(new ChatMessage(ChatRole.User,
+                $"Your answer is in {LanguageCheck.Name(wrong)}, but the question is in {LanguageCheck.Name(wanted)}. "
+                + $"Give the same answer again in {LanguageCheck.Name(wanted)}, as the same JSON. Keep each citation's quote exactly as the source words it."));
+            var again = await chat.GetResponseAsync<ModelAnswer>(messages, options, cancellationToken: ct);
+            if (again.Usage is not null) usage.Add(again.Usage);
+            if (again.FinishReason != ChatFinishReason.ContentFilter && again.TryGetResult(out var rewritten))
+            {
+                answer = rewritten;
+                language = new LanguageOutcome(wanted, LanguageCheck.DetectAnswer(rewritten.Answer) ?? wanted, true);
+            }
+        }
+        else if (language.Question is not null)
+        {
+            language = language with { Answer = language.Question };
+        }
+        var cost = Pricing.Cost(settings.Model, usage);
         var calls = tools?.Calls ?? [];
         // A calculation brings the units it applied: the answer may cite them like the retrieved articles.
         var sourceKeys = retrieval.Articles.Select(a => a.Article.Key).Concat(calls.SelectMany(c => c.BasisArticles)).ToHashSet();
         var citations = CitationCheck.Check(library.Act, asOf, sourceKeys,
             answer.Citations.Select(c => new Citation(c.Article, c.Paragraph, c.Quote)));
         var amounts = AmountCheck.Check(answer.Answer, calls.SelectMany(c => c.Numbers).Concat(AmountCheck.NumbersIn(question)));
-        return new Answer(answer.Status, answer.Answer, citations, retrieval, asOf, settings.Model, response.Usage, cost, watch.Elapsed,
-            calls, amounts);
+        return new Answer(answer.Status, answer.Answer, citations, retrieval, asOf, settings.Model, usage, cost, watch.Elapsed,
+            calls, amounts, language);
     }
 
     public static string BuildPrompt(string question, DateOnly asOf, Retrieval retrieval)
@@ -141,9 +174,11 @@ public sealed class Answerer(IChatClient chat, LawLibrary library)
         }
         sb.AppendLine("</sources>");
         sb.AppendLine();
-        sb.AppendLine("<question>");
+        var language = LanguageCheck.Detect(question);
+        sb.AppendLine(language is null ? "<question>" : $"<question language=\"{LanguageCheck.Name(language)}\">");
         sb.AppendLine(question);
         sb.AppendLine("</question>");
+        if (language is not null) sb.AppendLine($"Write the answer in {LanguageCheck.Name(language)}.");
         return sb.ToString();
     }
 }
