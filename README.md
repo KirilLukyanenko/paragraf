@@ -73,6 +73,9 @@ flowchart LR
    - Rejected: a paraphrase, a quote from the wrong paragraph, an article the model wasn't shown, and a paragraph that
      doesn't exist on that date.
    - An answer with any unverified citation is marked as not grounded.
+6. **Language.** [`LanguageCheck`](src/Paragraf.Core/Answers/LanguageCheck.cs) detects the question's language and the
+   answer's, leaving out the Polish quotes in the answer. The prompt names the question's language. If the answer
+   still comes back in another language, the same conversation asks once for it again.
 
 ## Calculations and the payroll system
 
@@ -96,7 +99,11 @@ flowchart LR
   - the notice period and the day it ends (art. 36 § 1, art. 30 § 2¹);
   - overtime pay (art. 151¹: normal pay plus 50% or 100% of the base salary);
   - the minimum non-compete compensation (art. 101² § 3);
-  - the limits of deductions from pay (art. 87 § 3–4, art. 108 § 3).
+  - the limits of deductions from pay (art. 87 § 3–4, art. 108 § 3);
+  - annual leave (art. 154, 154¹, 155): 20 or 26 days by years with every employer and the school completed, part time
+    rounded up, and leave for part of a year (art. 155¹–155³).
+
+  A unit test checks that every article and paragraph any calculation applies exists in the parsed code on the date.
 
   Each result names the units it applies and every assumption from outside the code, such as the pay regulation's
   hourly rate or the holiday act.
@@ -141,6 +148,22 @@ All three models called the right tools every time. The misses were these:
 Runs vary: a model that misses one question in one run may answer it in the next. Twelve questions show the kinds of
 failure, not a precise rate.
 
+**Language.** Sonnet's Spanish answer prompted a language check by code. Run over the 458 answers kept in
+`evals/runs`, it flagged six, and all six were real:
+- Haiku answered three Polish questions of the main set in English, one of them switching halfway.
+- With the payroll tools, whose results quote the Polish code, Sonnet answered two English questions in Polish and one
+  in Spanish. The amounts were right, so the payroll scoring had missed two of them.
+
+The prompt now names the question's language, and the answer is written again once if it still comes back wrong. In
+[Sonnet's re-run](evals/runs/payroll-sonnet-5-5-medium-language.md), every answer came back in the question's language
+on the first try: 12/12, with no rewrite needed. A test with a scripted model covers the rewrite.
+
+**Annual leave** added four questions (p13–p16): a degree counted as 8 years, previous employers counted, leave when
+leaving in May, and half time. All three models answered all four correctly
+([Opus](evals/runs/payroll-leave-opus-5-5-medium.md), [Sonnet](evals/runs/payroll-leave-sonnet-5-5-medium.md),
+[Haiku](evals/runs/payroll-leave-haiku-5-5-medium.md)). That includes "11 years in total, 2 with my current employer",
+which retrieval alone had missed: the calculation brings art. 154¹ with it.
+
 [`CompLedgerTests`](tests/Paragraf.IntegrationTests/CompLedgerTests.cs) builds comp-ledger from its own Dockerfile in
 Testcontainers. It loads the demo employees through comp-ledger's REST API, then checks the MCP client and the tools
 against it, with no model involved. CI checks out comp-ledger next to paragraf for this test.
@@ -165,8 +188,25 @@ frequency. A chunk full of "pracownik" and "pracodawca" outranked the one with t
 made the hybrid *worse* than vector search alone. BM25 over the same 1,141 chunks in memory fixed that.
 
 The two knobs (8 articles, BM25 weight 0.5) were chosen on this set. The order of the configurations holds on both
-halves of it: odd ids 98.7% vs even ids 96.3% for the default, against 92.3% / 85.0% for vector only. A held-out set
-would be the stronger check. Runs differ by about one point because the rewrite model is not deterministic.
+halves of it: odd ids 98.7% vs even ids 96.3% for the default, against 92.3% / 85.0% for vector only. Runs differ by
+about one point because the rewrite model is not deterministic.
+
+**Held-out set.** [`evals/holdout.jsonl`](evals/holdout.jsonl) has 40 questions written afterwards by a model that saw
+neither the tuning set nor the runs. They are casual, with situations described instead of legal terms ("my son broke
+his arm at school and I had to rush out"). Nothing was tuned on it.
+
+| Configuration | Recall | All expected found | MRR |
+|---|---|---|---|
+| [Default](evals/runs/holdout-retrieval-default.md) | 91.4% | 85.7% | 0.816 |
+| [Vector only](evals/runs/holdout-retrieval-vector-only.md) | 84.8% | 80.0% | 0.673 |
+
+Recall is 6.7 points lower than on the tuning set: that is the honest number for new questions. The hybrid still beats
+vector search by 6.6 points. The five misses are real gaps:
+- leave for a family emergency (art. 148¹, *siła wyższa*) described as a child's broken arm;
+- notice during sick leave (art. 41);
+- the scale of an employee's liability (art. 114) next to the cap that was found;
+- notice on a fixed-term contract (art. 36);
+- the length of parental leave (art. 180, 182¹ᵃ) asked as "a leave for a child".
 
 ### Answers (100 questions, judge Claude Sonnet 5.5)
 
@@ -216,6 +256,8 @@ with every expected point.
 | Eval-set test | Two evidence quotes ended in a line-break hyphen | A unit test checks every expected unit and evidence quote against the parsed code |
 | The demo page | A malformed JSON body returned 500 in Development | 400 in every environment |
 | Full run with the tools | Two answers on deductions from pay did the arithmetic themselves; the new amount check failed them | A `deduction_limits` calculation; both questions grounded on a re-run |
+| A Spanish answer in the payroll eval | A check over all kept answers found six answers in the wrong language, two of them scored as correct | The prompt names the language; a code check and one rewrite; the payroll score requires the question's language |
+| Held-out set | Retrieval recall 91.4% on 40 new questions, against 98.1% on the set the knobs were tuned on | Reported as is; the five misses are listed above, not tuned away |
 | Payroll eval, first run | The amount check rejected the annual salary that Opus quoted. comp-ledger had returned it, but the tool result held it only inside an assumption sentence | Tool results carry the payroll data they used as numbers. Opus went from 11 to 12 of 12 |
 
 ## The eval set
@@ -251,9 +293,25 @@ against the parsed code, through the same citation check the answers go through.
   it is parsed at start, since articles and citation checks come from the parsed text, not from the database.
 - **Costs are first-class.** Every answer carries its tokens and cost, and every eval run records its cost. The public
   demo has a per-address rate limit and a daily spend ceiling.
-- **CI** builds with warnings as errors, runs the unit tests and the integration tests (pgvector, and comp-ledger
-  built from its repository), builds the image, and gates on retrieval recall ≥ 95% over all 100 questions (about
-  $0.02 a run). The full answer eval runs on manual dispatch, with gates on status accuracy and grounded answers.
+- **Tests without a model.**
+  - 225 unit tests cover the parser, search, the citation, amount and language checks, the calculations, and every
+    eval question's expected units and quotes.
+  - Integration tests run against real containers. One set covers pgvector. Another builds comp-ledger from its own
+    repository and calls it over MCP.
+  - The API is tested in process (`WebApplicationFactory`) with a scripted model: validation, 400 for a malformed body,
+    the per-address rate limit (behind the proxy too), the daily spend ceiling, the JSON contract, and articles as of a
+    date.
+- **CI** builds with warnings as errors, runs all of the above, builds the image, and gates on retrieval recall ≥ 95%
+  over all 100 questions (about $0.02 a run). The full answer eval runs on manual dispatch, with gates on status
+  accuracy and grounded answers.
+- **Deployment.** [`deploy/`](deploy) holds the public demo for one server behind an existing Caddy: paragraf,
+  pgvector, comp-ledger and its database, each with memory and CPU limits.
+  - Only paragraf joins the proxy network.
+  - On the first run, [`bootstrap.sh`](deploy/bootstrap.sh) generates the passwords and creates the comp-ledger demo
+    tenant.
+  - The API loads the code into pgvector on its first start.
+  - [`scripts/deploy-demo.ps1`](scripts/deploy-demo.ps1) sends only commits that are already on GitHub. It shares one
+    deployment lock with the other services on the server. Keys go only from the owner's machine to a mode-600 file.
 
 ## Running it
 
@@ -280,7 +338,8 @@ docker compose --profile payroll up -d --build                       # comp-ledg
 dotnet run --project src/Paragraf.Cli -- seed-payroll                # a tenant with the demo employees; prints its id
 export CompLedger__Endpoint=http://127.0.0.1:8090/mcp CompLedger__TenantId=...
 dotnet run --project src/Paragraf.Cli -- ask "E-1003 gets notice on 10 December 2026. When does it end?"
-dotnet run --project src/Paragraf.Cli -- eval-payroll --model claude-sonnet-5-5   # 12 questions, about $0.65
+dotnet run --project src/Paragraf.Cli -- eval-payroll --model claude-sonnet-5-5   # 16 questions, about $0.90
+dotnet run --project src/Paragraf.Cli -- eval --set holdout --retrieval-only       # the held-out set
 ```
 
 Without comp-ledger the calculations still work when the question gives the amounts.

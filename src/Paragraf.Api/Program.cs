@@ -47,6 +47,45 @@ builder.Services.AddOpenTelemetry()
     });
 
 var app = builder.Build();
+
+// On a fresh server the store is empty: with Paragraf:IngestOnStartup the API embeds the code once (about $0.004)
+// before it takes requests. Later starts find the chunks and skip it. A failure leaves /health at 503.
+if (app.Configuration.GetValue<bool>("Paragraf:IngestOnStartup"))
+{
+    var library = app.Services.GetRequiredService<LawLibrary>();
+    try
+    {
+        var chunks = await app.Services.GetRequiredService<ChunkStore>().CountAsync(library.Act.Eli);
+        if (chunks == 0) throw new InvalidOperationException("empty");
+    }
+    catch (Exception ex) when (ex is InvalidOperationException or PostgresException)
+    {
+        try
+        {
+            var result = await app.Services.GetRequiredService<Ingestion>().RunAsync();
+            app.Logger.LogInformation("Ingested {Chunks} chunks, ${Cost}", result.Chunks, result.CostUsd);
+        }
+        catch (Exception failure)
+        {
+            app.Logger.LogError(failure, "Ingestion on startup failed");
+        }
+    }
+}
+
+// Behind the server's reverse proxy every request comes from the proxy's address, so the per-address rate limit
+// would be one limit for everyone. The container is reachable only through the proxy, which sets X-Forwarded-For.
+if (app.Configuration.GetValue<bool>("Paragraf:BehindProxy"))
+{
+    var forwarded = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto,
+        ForwardLimit = 1,
+    };
+    forwarded.KnownIPNetworks.Clear();
+    forwarded.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwarded);
+}
+
 app.UseExceptionHandler();
 app.UseDefaultFiles();
 app.UseStaticFiles();

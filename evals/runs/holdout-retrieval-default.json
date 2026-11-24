@@ -1,0 +1,1240 @@
+{
+  "summary": {
+    "name": "holdout-retrieval-default",
+    "configuration": "retrieval vector+bm25x0.5+named+rewrite/k8, rewrite claude-haiku-5-5, embeddings text-embedding-3-small",
+    "at": "2026-11-24T11:09:27.1149403+00:00",
+    "questions": 40,
+    "retrieval_recall": 0.9142857142857141,
+    "retrieval_all_found": 0.8571428571428571,
+    "mrr": 0.8159863945578232,
+    "language_rewrites": 0,
+    "cost_usd": 0.0062,
+    "cost_per_question_usd": 0.0002,
+    "latency_p50_ms": 2098.7465,
+    "latency_p95_ms": 2771.0046,
+    "errors": 0,
+    "by_category": {
+      "ambiguous_or_false_premise": {
+        "questions": 2,
+        "retrieval_recall": 0.41666666666666663
+      },
+      "injection": {
+        "questions": 1,
+        "retrieval_recall": 1
+      },
+      "lookup": {
+        "questions": 16,
+        "retrieval_recall": 0.9375
+      },
+      "multi_article": {
+        "questions": 10,
+        "retrieval_recall": 0.9166666666666666
+      },
+      "not_in_code": {
+        "questions": 3
+      },
+      "numeric": {
+        "questions": 6,
+        "retrieval_recall": 1
+      },
+      "out_of_domain": {
+        "questions": 2
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "h001",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "25"
+      ],
+      "retrieved": [
+        "25^1",
+        "25",
+        "34",
+        "30",
+        "29^3",
+        "36",
+        "36^1",
+        "29"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001472,
+      "retrieval_ms": 2388.5985,
+      "generation_ms": 0
+    },
+    {
+      "id": "h002",
+      "category": "lookup",
+      "lang": "en",
+      "expected": [
+        "67^33"
+      ],
+      "retrieved": [
+        "67^18",
+        "67^33",
+        "67^20",
+        "67^30",
+        "67^19",
+        "67^31",
+        "67^28",
+        "67^27"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.00016,
+      "retrieval_ms": 2452.0032,
+      "generation_ms": 0
+    },
+    {
+      "id": "h003",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "101^2"
+      ],
+      "retrieved": [
+        "101^3",
+        "101^2",
+        "101^1",
+        "47^1",
+        "61^2",
+        "58",
+        "50",
+        "18^3e"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001495,
+      "retrieval_ms": 2388.5996,
+      "generation_ms": 0
+    },
+    {
+      "id": "h004",
+      "category": "lookup",
+      "lang": "uk",
+      "expected": [
+        "202"
+      ],
+      "retrieved": [
+        "200^2",
+        "202",
+        "205",
+        "134",
+        "135",
+        "144",
+        "136",
+        "154^2"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001395,
+      "retrieval_ms": 3759.6148,
+      "generation_ms": 0
+    },
+    {
+      "id": "h005",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "187"
+      ],
+      "retrieved": [
+        "187",
+        "176",
+        "179",
+        "148",
+        "183",
+        "180",
+        "189",
+        "185"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001465,
+      "retrieval_ms": 2026.2467,
+      "generation_ms": 0
+    },
+    {
+      "id": "h006",
+      "category": "lookup",
+      "lang": "en",
+      "expected": [
+        "182^3"
+      ],
+      "retrieved": [
+        "182^3",
+        "180^2",
+        "163",
+        "186^7",
+        "186^8a",
+        "180",
+        "186",
+        "183"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001419,
+      "retrieval_ms": 2319.7364,
+      "generation_ms": 0
+    },
+    {
+      "id": "h007",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "94^3"
+      ],
+      "retrieved": [
+        "94^3",
+        "18^3a",
+        "94^3a",
+        "101^1",
+        "108",
+        "210",
+        "67^29",
+        "281"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001666,
+      "retrieval_ms": 2097.4616,
+      "generation_ms": 0
+    },
+    {
+      "id": "h008",
+      "category": "lookup",
+      "lang": "en",
+      "expected": [
+        "210"
+      ],
+      "retrieved": [
+        "210",
+        "211",
+        "218",
+        "209^2",
+        "209^3",
+        "67^19",
+        "67^31",
+        "108"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001883,
+      "retrieval_ms": 2493.1857,
+      "generation_ms": 0
+    },
+    {
+      "id": "h009",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "264"
+      ],
+      "retrieved": [
+        "264",
+        "265",
+        "44",
+        "67",
+        "256",
+        "30",
+        "45",
+        "72"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001397,
+      "retrieval_ms": 1860.3956,
+      "generation_ms": 0
+    },
+    {
+      "id": "h010",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "291"
+      ],
+      "retrieved": [
+        "292",
+        "291",
+        "265",
+        "36^1",
+        "59",
+        "282",
+        "56",
+        "61^2"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 2,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001509,
+      "retrieval_ms": 1933.682,
+      "generation_ms": 0
+    },
+    {
+      "id": "h011",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "167^2"
+      ],
+      "retrieved": [
+        "167^2",
+        "155^1",
+        "158",
+        "167^3",
+        "155^2",
+        "154",
+        "155^3",
+        "161"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001467,
+      "retrieval_ms": 1875.1946,
+      "generation_ms": 0
+    },
+    {
+      "id": "h012",
+      "category": "lookup",
+      "lang": "uk",
+      "expected": [
+        "85"
+      ],
+      "retrieved": [
+        "85",
+        "87",
+        "47",
+        "86",
+        "36",
+        "129",
+        "57",
+        "171"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.000154,
+      "retrieval_ms": 1744.1033,
+      "generation_ms": 0
+    },
+    {
+      "id": "h013",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "18^3c"
+      ],
+      "retrieved": [
+        "18^3c",
+        "18^3d",
+        "11^2",
+        "18^3a",
+        "18^3b",
+        "18^3f",
+        "18^3g",
+        "18"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001707,
+      "retrieval_ms": 2126.6629,
+      "generation_ms": 0
+    },
+    {
+      "id": "h014",
+      "category": "lookup",
+      "lang": "en",
+      "expected": [
+        "148^1"
+      ],
+      "retrieved": [
+        "188",
+        "53",
+        "185",
+        "182^3",
+        "180",
+        "186",
+        "189",
+        "183"
+      ],
+      "retrieval_recall": 0,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001462,
+      "retrieval_ms": 1996.2796,
+      "generation_ms": 0
+    },
+    {
+      "id": "h015",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "173^1"
+      ],
+      "retrieved": [
+        "180",
+        "186",
+        "183",
+        "173^1",
+        "182^3",
+        "182^1a",
+        "181",
+        "186^4"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 4,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001484,
+      "retrieval_ms": 2136.6883,
+      "generation_ms": 0
+    },
+    {
+      "id": "h016",
+      "category": "lookup",
+      "lang": "pl",
+      "expected": [
+        "22"
+      ],
+      "retrieved": [
+        "22",
+        "25^1",
+        "29^2",
+        "29",
+        "67^20",
+        "68",
+        "29^4",
+        "67^19"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001748,
+      "retrieval_ms": 2685.1869,
+      "generation_ms": 0
+    },
+    {
+      "id": "h017",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "114",
+        "115",
+        "119"
+      ],
+      "retrieved": [
+        "119",
+        "122",
+        "116",
+        "115",
+        "117",
+        "124",
+        "121",
+        "118"
+      ],
+      "retrieval_recall": 0.6666666666666666,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001663,
+      "retrieval_ms": 1994.7216,
+      "generation_ms": 0
+    },
+    {
+      "id": "h018",
+      "category": "multi_article",
+      "lang": "en",
+      "expected": [
+        "41",
+        "36"
+      ],
+      "retrieved": [
+        "53",
+        "39",
+        "36",
+        "55",
+        "48",
+        "36^2",
+        "201",
+        "51"
+      ],
+      "retrieval_recall": 0.5,
+      "first_expected_rank": 3,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001599,
+      "retrieval_ms": 2010.805,
+      "generation_ms": 0
+    },
+    {
+      "id": "h019",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "151",
+        "151^1"
+      ],
+      "retrieved": [
+        "151^1",
+        "151",
+        "151^8",
+        "151^4",
+        "151^6",
+        "151^11",
+        "151^2",
+        "138"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001687,
+      "retrieval_ms": 2293.2991,
+      "generation_ms": 0
+    },
+    {
+      "id": "h020",
+      "category": "multi_article",
+      "lang": "uk",
+      "expected": [
+        "177"
+      ],
+      "retrieved": [
+        "177",
+        "57",
+        "36^1",
+        "47",
+        "36",
+        "25",
+        "41",
+        "179"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001659,
+      "retrieval_ms": 2417.8143,
+      "generation_ms": 0
+    },
+    {
+      "id": "h021",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "154",
+        "155"
+      ],
+      "retrieved": [
+        "154",
+        "155^1",
+        "155",
+        "155^2",
+        "158",
+        "155^3",
+        "154^2",
+        "205"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001511,
+      "retrieval_ms": 2376.4804,
+      "generation_ms": 0
+    },
+    {
+      "id": "h022",
+      "category": "multi_article",
+      "lang": "en",
+      "expected": [
+        "151^7",
+        "151^8"
+      ],
+      "retrieved": [
+        "151^9",
+        "151^10",
+        "151^8",
+        "151^7",
+        "151^1",
+        "178^1",
+        "203",
+        "149"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 3,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001508,
+      "retrieval_ms": 2061.3487,
+      "generation_ms": 0
+    },
+    {
+      "id": "h023",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "52",
+        "264"
+      ],
+      "retrieved": [
+        "52",
+        "53",
+        "264",
+        "48",
+        "97",
+        "29^4",
+        "44",
+        "55"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0002082,
+      "retrieval_ms": 2341.3982,
+      "generation_ms": 0
+    },
+    {
+      "id": "h024",
+      "category": "multi_article",
+      "lang": "en",
+      "expected": [
+        "25^1"
+      ],
+      "retrieved": [
+        "25^1",
+        "29^3",
+        "36",
+        "25",
+        "23^1a",
+        "53",
+        "36^1",
+        "9^1"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001763,
+      "retrieval_ms": 2013.4485,
+      "generation_ms": 0
+    },
+    {
+      "id": "h025",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "67^19",
+        "67^24"
+      ],
+      "retrieved": [
+        "67^19",
+        "67^18",
+        "67^24",
+        "67^25",
+        "67^31",
+        "67^29",
+        "67^28",
+        "67^20"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001723,
+      "retrieval_ms": 2771.0046,
+      "generation_ms": 0
+    },
+    {
+      "id": "h026",
+      "category": "multi_article",
+      "lang": "pl",
+      "expected": [
+        "132",
+        "133"
+      ],
+      "retrieved": [
+        "132",
+        "133",
+        "131",
+        "136",
+        "140^1",
+        "154^2",
+        "139",
+        "203"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001648,
+      "retrieval_ms": 2122.4399,
+      "generation_ms": 0
+    },
+    {
+      "id": "h027",
+      "category": "numeric",
+      "lang": "pl",
+      "expected": [
+        "180"
+      ],
+      "retrieved": [
+        "180",
+        "182",
+        "183",
+        "180^2",
+        "180^1",
+        "184",
+        "183^1",
+        "186^8a"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001244,
+      "retrieval_ms": 1678.1076,
+      "generation_ms": 0
+    },
+    {
+      "id": "h028",
+      "category": "numeric",
+      "lang": "en",
+      "expected": [
+        "36",
+        "30"
+      ],
+      "retrieved": [
+        "36",
+        "36^1",
+        "30",
+        "25^1",
+        "42",
+        "29^3",
+        "25",
+        "34"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001655,
+      "retrieval_ms": 2395.4855,
+      "generation_ms": 0
+    },
+    {
+      "id": "h029",
+      "category": "numeric",
+      "lang": "uk",
+      "expected": [
+        "188"
+      ],
+      "retrieved": [
+        "188",
+        "182^3",
+        "183",
+        "148^1",
+        "186",
+        "182",
+        "189",
+        "186^7"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001572,
+      "retrieval_ms": 2178.8893,
+      "generation_ms": 0
+    },
+    {
+      "id": "h030",
+      "category": "numeric",
+      "lang": "pl",
+      "expected": [
+        "108"
+      ],
+      "retrieved": [
+        "108",
+        "112",
+        "87",
+        "22^1d",
+        "22^1c",
+        "22^1f",
+        "109",
+        "111"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001517,
+      "retrieval_ms": 1903.5496,
+      "generation_ms": 0
+    },
+    {
+      "id": "h031",
+      "category": "numeric",
+      "lang": "en",
+      "expected": [
+        "153",
+        "154"
+      ],
+      "retrieved": [
+        "154",
+        "155^2",
+        "154^2",
+        "158",
+        "167^1",
+        "205",
+        "155^1",
+        "153"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001755,
+      "retrieval_ms": 1893.5751,
+      "generation_ms": 0
+    },
+    {
+      "id": "h032",
+      "category": "numeric",
+      "lang": "pl",
+      "expected": [
+        "182^1a"
+      ],
+      "retrieved": [
+        "182^1a",
+        "182^1f",
+        "186",
+        "180^2",
+        "180",
+        "182^1d",
+        "183",
+        "182^1e"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001531,
+      "retrieval_ms": 1826.9559,
+      "generation_ms": 0
+    },
+    {
+      "id": "h033",
+      "category": "not_in_code",
+      "lang": "pl",
+      "expected": [],
+      "retrieved": [
+        "87^1",
+        "10",
+        "297",
+        "81",
+        "18^3e",
+        "77^3",
+        "18^3d",
+        "13"
+      ],
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001274,
+      "retrieval_ms": 1710.7334,
+      "generation_ms": 0
+    },
+    {
+      "id": "h034",
+      "category": "not_in_code",
+      "lang": "en",
+      "expected": [],
+      "retrieved": [
+        "87",
+        "87^1",
+        "297",
+        "97",
+        "67^25",
+        "22^1c",
+        "18^3ca",
+        "22^1d"
+      ],
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.000137,
+      "retrieval_ms": 2840.2153,
+      "generation_ms": 0
+    },
+    {
+      "id": "h035",
+      "category": "not_in_code",
+      "lang": "pl",
+      "expected": [],
+      "retrieved": [
+        "92",
+        "93",
+        "229",
+        "53",
+        "231",
+        "148^1",
+        "47^1",
+        "172"
+      ],
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001402,
+      "retrieval_ms": 2181.538,
+      "generation_ms": 0
+    },
+    {
+      "id": "h036",
+      "category": "out_of_domain",
+      "lang": "en",
+      "expected": [],
+      "retrieved": [
+        "155",
+        "200^2",
+        "202",
+        "151^7",
+        "103^2",
+        "94^13",
+        "103^1",
+        "203"
+      ],
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001332,
+      "retrieval_ms": 1722.1789,
+      "generation_ms": 0
+    },
+    {
+      "id": "h037",
+      "category": "out_of_domain",
+      "lang": "pl",
+      "expected": [],
+      "retrieved": [
+        "151^10",
+        "133",
+        "203",
+        "144",
+        "151^9",
+        "302",
+        "151^12",
+        "155^2"
+      ],
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.000106,
+      "retrieval_ms": 1406.7301,
+      "generation_ms": 0
+    },
+    {
+      "id": "h038",
+      "category": "injection",
+      "lang": "pl",
+      "expected": [
+        "97"
+      ],
+      "retrieved": [
+        "97",
+        "265",
+        "99",
+        "97^1",
+        "29^4",
+        "45",
+        "254",
+        "248"
+      ],
+      "retrieval_recall": 1,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0002172,
+      "retrieval_ms": 2458.9479,
+      "generation_ms": 0
+    },
+    {
+      "id": "h039",
+      "category": "ambiguous_or_false_premise",
+      "lang": "en",
+      "expected": [
+        "36",
+        "30"
+      ],
+      "retrieved": [
+        "30",
+        "55",
+        "36^1",
+        "29^4",
+        "48",
+        "41",
+        "34",
+        "25"
+      ],
+      "retrieval_recall": 0.5,
+      "first_expected_rank": 1,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001556,
+      "retrieval_ms": 2098.7465,
+      "generation_ms": 0
+    },
+    {
+      "id": "h040",
+      "category": "ambiguous_or_false_premise",
+      "lang": "pl",
+      "expected": [
+        "180",
+        "182^3",
+        "182^1a"
+      ],
+      "retrieved": [
+        "186",
+        "186^7",
+        "183",
+        "182^1f",
+        "186^8",
+        "186^5",
+        "182^3",
+        "182^1c"
+      ],
+      "retrieval_recall": 0.3333333333333333,
+      "first_expected_rank": 7,
+      "citations": 0,
+      "verified_citations": 0,
+      "citation_problems": [],
+      "tools_called": [],
+      "language_rewritten": false,
+      "contradicted_claims": [],
+      "outside_claims": [],
+      "cost_usd": 0.0001218,
+      "retrieval_ms": 1923.7371,
+      "generation_ms": 0
+    }
+  ]
+}

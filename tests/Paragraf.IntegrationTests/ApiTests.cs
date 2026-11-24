@@ -42,7 +42,7 @@ public sealed class ApiFixture : IAsyncLifetime
     public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
     /// <summary>An API with its own state (rate limiter, spend guard) and the given model and settings.</summary>
-    public WebApplicationFactory<Program> Api(ScriptedModel model, int asksPerMinute = 100, decimal dailyBudgetUsd = 10m) =>
+    public WebApplicationFactory<Program> Api(ScriptedModel model, int asksPerMinute = 100, decimal dailyBudgetUsd = 10m, bool behindProxy = false) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(web =>
         {
             web.UseEnvironment("Testing");
@@ -51,6 +51,7 @@ public sealed class ApiFixture : IAsyncLifetime
             web.UseSetting("Paragraf:Retrieval:Rewrite", "false");
             web.UseSetting("Paragraf:AsksPerMinute", asksPerMinute.ToString());
             web.UseSetting("Paragraf:DailyBudgetUsd", dailyBudgetUsd.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            web.UseSetting("Paragraf:BehindProxy", behindProxy.ToString());
             web.UseSetting("Anthropic:ApiKey", "not-used");
             web.UseSetting("OpenAI:ApiKey", "not-used");
             web.ConfigureTestServices(services =>
@@ -129,6 +130,25 @@ public sealed class ApiTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         var codes = new List<HttpStatusCode>();
         for (var i = 0; i < 3; i++) codes.Add((await Ask(client, "What notice period does art. 36 give after 7 years?")).StatusCode);
         Assert.Equal([HttpStatusCode.OK, HttpStatusCode.OK, HttpStatusCode.TooManyRequests], codes);
+    }
+
+    [Fact]
+    public async Task Behind_the_proxy_the_limit_is_per_visitor_address()
+    {
+        await using var api = fixture.Api(new ScriptedModel(ScriptedModel.NoticeAnswer()), asksPerMinute: 1, behindProxy: true);
+        var client = api.CreateClient();
+        async Task<HttpStatusCode> AskFrom(string address)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/ask")
+            {
+                Content = Json(JsonSerializer.Serialize(new { question = "What notice period does art. 36 give after 7 years?" })),
+            };
+            request.Headers.Add("X-Forwarded-For", address);
+            return (await client.SendAsync(request, Ct)).StatusCode;
+        }
+        Assert.Equal(HttpStatusCode.OK, await AskFrom("203.0.113.7"));
+        Assert.Equal(HttpStatusCode.OK, await AskFrom("198.51.100.20"));
+        Assert.Equal(HttpStatusCode.TooManyRequests, await AskFrom("203.0.113.7"));
     }
 
     [Fact]

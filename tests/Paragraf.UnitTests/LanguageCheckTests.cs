@@ -33,7 +33,7 @@ public sealed class LanguageCheckTests
     [Fact]
     public void Every_eval_question_is_detected_as_its_language()
     {
-        var files = new[] { "evals/questions.jsonl", "evals/payroll/questions.jsonl" };
+        var files = new[] { "evals/questions.jsonl", "evals/holdout.jsonl", "evals/payroll/questions.jsonl" };
         var wrong = files
             .SelectMany(f => File.ReadLines(Path.Combine(KodeksPracy.RepoRoot(), f)))
             .Where(l => l.Trim().Length > 0)

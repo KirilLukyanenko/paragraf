@@ -1,0 +1,82 @@
+# The public demo on one server, behind the server's Caddy (an external network, as on the ArbBot VM).
+# Only the paragraf service joins that network; the databases and comp-ledger are reachable only inside this project.
+# Values come from deploy/.env, written by scripts/deploy-demo.ps1 and deploy/bootstrap.sh (never in git).
+name: paragraf
+
+services:
+  paragraf:
+    build: ..
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Paragraf: Host=db;Username=paragraf;Database=paragraf;Password=${PARAGRAF_DB_PASSWORD:?}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:?}
+      Paragraf__Answer__Model: ${PARAGRAF_MODEL:-claude-opus-5-5}
+      Paragraf__DailyBudgetUsd: ${PARAGRAF_DAILY_BUDGET_USD:-2}
+      Paragraf__AsksPerMinute: ${PARAGRAF_ASKS_PER_MINUTE:-5}
+      Paragraf__IngestOnStartup: "true"
+      Paragraf__BehindProxy: "true"
+      CompLedger__Endpoint: http://comp-ledger:8080/mcp
+      CompLedger__TenantId: ${COMP_LEDGER_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [default, proxy]
+    mem_limit: 768m
+    cpus: 0.75
+
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: paragraf
+      POSTGRES_DB: paragraf
+      POSTGRES_PASSWORD: ${PARAGRAF_DB_PASSWORD:?}
+    volumes:
+      - paragraf-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paragraf"]
+      interval: 3s
+      retries: 30
+    mem_limit: 512m
+    cpus: 0.5
+
+  comp-ledger-db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${COMP_LEDGER_DB_PASSWORD:?}
+      COMP_APP_PASSWORD: ${COMP_LEDGER_APP_PASSWORD:?}
+    volumes:
+      - ./comp-ledger/init-roles.sh:/docker-entrypoint-initdb.d/init-roles.sh:ro
+      - comp-ledger-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      retries: 30
+    mem_limit: 256m
+    cpus: 0.25
+
+  # The payroll service with the demo employees. Not exposed: only paragraf calls it, over MCP.
+  comp-ledger:
+    build: ../comp-ledger
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__App: Host=comp-ledger-db;Username=comp_app_login;Password=${COMP_LEDGER_APP_PASSWORD};Database=postgres
+      ConnectionStrings__Migrations: Host=comp-ledger-db;Username=postgres;Password=${COMP_LEDGER_DB_PASSWORD};Database=postgres
+      Database__MigrateOnStartup: "true"
+      TenantAdminApi__Enabled: "true"
+    depends_on:
+      comp-ledger-db:
+        condition: service_healthy
+    mem_limit: 384m
+    cpus: 0.5
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-arbbot_default}
+
+volumes:
+  paragraf-db:
+  comp-ledger-db:

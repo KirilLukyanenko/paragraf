@@ -3,3 +3,6 @@
 .git
 .env
 evals/runs
+comp-ledger
+deploy
+tests

@@ -69,27 +69,31 @@ public class EvalSetTests
 {
     private static readonly DateOnly AsOf = new(2026, 11, 23);
 
-    public static TheoryData<string> AnswerableQuestions()
+    /// <summary>The tuning set and the held-out set nobody tuned against.</summary>
+    private static readonly string[] Files = ["questions.jsonl", "holdout.jsonl"];
+
+    private static IEnumerable<JsonElement> Questions(string file) =>
+        File.ReadLines(Path.Combine(KodeksPracy.RepoRoot(), "evals", file))
+            .Where(l => l.Trim().Length > 0)
+            .Select(l => JsonDocument.Parse(l).RootElement);
+
+    public static TheoryData<string, string> AnswerableQuestions()
     {
-        var data = new TheoryData<string>();
-        foreach (var line in File.ReadLines(Path.Combine(KodeksPracy.RepoRoot(), "evals", "questions.jsonl")))
-        {
-            using var doc = JsonDocument.Parse(line);
-            if (doc.RootElement.GetProperty("expected").GetArrayLength() > 0) data.Add(doc.RootElement.GetProperty("id").GetString()!);
-        }
+        var data = new TheoryData<string, string>();
+        foreach (var file in Files)
+            foreach (var q in Questions(file))
+                if (q.GetProperty("expected").GetArrayLength() > 0) data.Add(file, q.GetProperty("id").GetString()!);
         return data;
     }
 
-    private static JsonElement Question(string id) =>
-        File.ReadLines(Path.Combine(KodeksPracy.RepoRoot(), "evals", "questions.jsonl"))
-            .Select(l => JsonDocument.Parse(l).RootElement)
-            .Single(e => e.GetProperty("id").GetString() == id);
+    private static JsonElement Question(string file, string id) =>
+        Questions(file).Single(e => e.GetProperty("id").GetString() == id);
 
     [Theory]
     [MemberData(nameof(AnswerableQuestions))]
-    public void Expected_units_exist_and_each_evidence_quote_is_in_one_of_them(string id)
+    public void Expected_units_exist_and_each_evidence_quote_is_in_one_of_them(string file, string id)
     {
-        var q = Question(id);
+        var q = Question(file, id);
         var units = new List<string>();
         foreach (var expected in q.GetProperty("expected").EnumerateArray())
         {
