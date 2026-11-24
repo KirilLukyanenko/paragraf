@@ -16,7 +16,7 @@
 .EXAMPLE
   .\scripts\deploy-demo.ps1 -Secrets                     # the first time
   .\scripts\deploy-demo.ps1                              # update the code
-  .\scripts\deploy-demo.ps1 -Model claude-sonnet-5-5     # change the answer model
+  .\scripts\deploy-demo.ps1 -Model claude-opus-5-5       # another answer model (the demo runs Sonnet)
 #>
 param(
     [switch] $Secrets,

@@ -318,6 +318,8 @@ against the parsed code, through the same citation check the answers go through.
   accuracy and grounded answers.
 - **Deployment.** [`deploy/`](deploy) holds the public demo for one server behind an existing Caddy: paragraf,
   pgvector, comp-ledger and its database, each with memory and CPU limits.
+  - The demo answers with Claude Sonnet 5.5. On the answer evals it scores 95.6% against Opus's 97.2%, at about half
+    the cost per question and in 7 s against 12 s. The eval default stays Opus.
   - Only paragraf joins the proxy network.
   - On the first run, [`bootstrap.sh`](deploy/bootstrap.sh) generates the passwords and creates the comp-ledger demo
     tenant.

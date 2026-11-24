@@ -11,7 +11,9 @@ services:
       ConnectionStrings__Paragraf: Host=db;Username=paragraf;Database=paragraf;Password=${PARAGRAF_DB_PASSWORD:?}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
       OPENAI_API_KEY: ${OPENAI_API_KEY:?}
-      Paragraf__Answer__Model: ${PARAGRAF_MODEL:-claude-opus-5-5}
+      # Sonnet on the demo: 95.6% against Opus's 97.2% on the answer evals, at about half the cost per question
+      # ($0.036 against $0.065) and 7 s against 12 s (evals/runs).
+      Paragraf__Answer__Model: ${PARAGRAF_MODEL:-claude-sonnet-5-5}
       Paragraf__DailyBudgetUsd: ${PARAGRAF_DAILY_BUDGET_USD:-2}
       Paragraf__AsksPerMinute: ${PARAGRAF_ASKS_PER_MINUTE:-5}
       Paragraf__IngestOnStartup: "true"
