@@ -293,14 +293,26 @@ against the parsed code, through the same citation check the answers go through.
   it is parsed at start, since articles and citation checks come from the parsed text, not from the database.
 - **Costs are first-class.** Every answer carries its tokens and cost, and every eval run records its cost. The public
   demo has a per-address rate limit and a daily spend ceiling.
+- **The demo feeds the eval set.** The API keeps every ask for 30 days in PostgreSQL: the question, the answer, its
+  status, whether it passed the checks, its cost and trace id. The page says so and asks for no personal data.
+  - A repeated question (the page's examples, above all) gets the earlier answer: no model call, $0, and it still works
+    after the day's budget is spent. Only answers that passed every check are reused. The key includes the date, the
+    model and the build, so a deployment with a fix never serves an old answer.
+  - A visitor can mark an answer as helpful or not.
+  - [`scripts/demo-asks.ps1`](scripts/demo-asks.ps1) copies the log from the server into a git-ignored folder, and
+    `paragraf asks` prints the counts, cost, languages and marks. It writes the misses (marked unhelpful, or a check
+    failed) as unlabelled eval questions, so the owner can label them into the held-out set.
+- **Failures of the model are not the visitor's bug.** An overloaded, rate-limited or unreachable model or embedding
+  service gets 503 with "try again", not 500, and costs nothing.
 - **Tests without a model.**
   - 225 unit tests cover the parser, search, the citation, amount and language checks, the calculations, and every
     eval question's expected units and quotes.
   - Integration tests run against real containers. One set covers pgvector. Another builds comp-ledger from its own
     repository and calls it over MCP.
   - The API is tested in process (`WebApplicationFactory`) with a scripted model: validation, 400 for a malformed body,
-    the per-address rate limit (behind the proxy too), the daily spend ceiling, the JSON contract, and articles as of a
-    date.
+    the per-address rate limit (behind the proxy too), the daily spend ceiling, the JSON contract, articles as of a
+    date, reused answers (and that an ungrounded one is not reused), the ask log and marks, and 503 when the model is
+    down.
 - **CI** builds with warnings as errors, runs all of the above, builds the image, and gates on retrieval recall ≥ 95%
   over all 100 questions (about $0.02 a run). The full answer eval runs on manual dispatch, with gates on status
   accuracy and grounded answers.
@@ -343,6 +355,13 @@ dotnet run --project src/Paragraf.Cli -- eval --set holdout --retrieval-only    
 ```
 
 Without comp-ledger the calculations still work when the question gives the amounts.
+
+What the API was asked, locally or on the demo server:
+
+```bash
+dotnet run --project src/Paragraf.Cli -- asks --days 7 --export misses.jsonl   # from ConnectionStrings__Paragraf
+pwsh scripts/demo-asks.ps1                                                      # from the demo server, into evals/feedback/
+```
 
 ## Limits
 

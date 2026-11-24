@@ -134,6 +134,30 @@ switch (command)
         Console.WriteLine($"written to evals/runs/{name}.json and .md");
         return options.MinCorrect is { } min && summary.Correct < min ? 2 : 0;
     }
+    case "asks":
+    {
+        // The API's ask log: from ConnectionStrings:Paragraf, or from a file exported from the server.
+        var since = DateTimeOffset.UtcNow.AddDays(-(options.Days ?? 30));
+        IReadOnlyList<AskLog.Entry> asks;
+        if (options.File is { } file)
+        {
+            asks = AskReport.Load(file).Where(a => a.At > since).ToList();
+        }
+        else
+        {
+            var log = services.GetRequiredService<AskLog>();
+            await log.EnsureSchemaAsync(cts.Token);
+            asks = await log.SinceAsync(since, cts.Token);
+        }
+        Console.WriteLine(AskReport.Summary(asks));
+        if (options.Export is { } export)
+        {
+            var lines = AskReport.Candidates(asks).ToList();
+            await File.WriteAllLinesAsync(export, lines, cts.Token);
+            Console.WriteLine($"{lines.Count} misses written to {export} as unlabelled eval questions");
+        }
+        return 0;
+    }
     default:
         Console.WriteLine("""
             paragraf ingest                         embed the Labour Code and load it into PostgreSQL
@@ -141,6 +165,8 @@ switch (command)
             paragraf eval [options]                 run the eval set (evals/questions.jsonl)
             paragraf seed-payroll [comp-ledger url] create a comp-ledger tenant with the demo employees
             paragraf eval-payroll [options]         run the calculation eval set (evals/payroll/questions.jsonl)
+            paragraf asks [--days N] [--file F] [--export F]
+                                                    what the demo was asked; the misses as unlabelled eval questions
 
             options: --as-of yyyy-MM-dd  --model M  --effort low|medium|high  --articles K  --lexical-weight W
                      --no-vector --no-lexical --no-named --no-rewrite --no-tools
@@ -176,6 +202,9 @@ internal sealed class Options
     public double? MinRecall { get; private set; }
     public double? MinStatus { get; private set; }
     public double? MinGrounded { get; private set; }
+    public int? Days { get; private set; }
+    public string? File { get; private set; }
+    public string? Export { get; private set; }
 
     private static double Fraction(string s) => double.Parse(s, System.Globalization.CultureInfo.InvariantCulture);
 
@@ -217,6 +246,9 @@ internal sealed class Options
                 case "--min-recall": o.MinRecall = Fraction(Next()); break;
                 case "--min-status": o.MinStatus = Fraction(Next()); break;
                 case "--min-grounded": o.MinGrounded = Fraction(Next()); break;
+                case "--days": o.Days = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
+                case "--file": o.File = Next(); break;
+                case "--export": o.Export = Next(); break;
                 default: o.Positional.Add(args[i]); break;
             }
         }

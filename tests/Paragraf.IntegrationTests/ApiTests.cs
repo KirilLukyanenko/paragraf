@@ -41,8 +41,12 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
-    /// <summary>An API with its own state (rate limiter, spend guard) and the given model and settings.</summary>
-    public WebApplicationFactory<Program> Api(ScriptedModel model, int asksPerMinute = 100, decimal dailyBudgetUsd = 10m, bool behindProxy = false) =>
+    /// <summary>
+    /// An API with its own state (rate limiter, spend guard) and the given model and settings. The ask log is in the
+    /// shared database, so reusing answers is off unless a test asks for it (and then uses a question of its own).
+    /// </summary>
+    public WebApplicationFactory<Program> Api(ScriptedModel model, int asksPerMinute = 100, decimal dailyBudgetUsd = 10m, bool behindProxy = false,
+        bool reuseAnswers = false) =>
         new WebApplicationFactory<Program>().WithWebHostBuilder(web =>
         {
             web.UseEnvironment("Testing");
@@ -52,6 +56,7 @@ public sealed class ApiFixture : IAsyncLifetime
             web.UseSetting("Paragraf:AsksPerMinute", asksPerMinute.ToString());
             web.UseSetting("Paragraf:DailyBudgetUsd", dailyBudgetUsd.ToString(System.Globalization.CultureInfo.InvariantCulture));
             web.UseSetting("Paragraf:BehindProxy", behindProxy.ToString());
+            web.UseSetting("Paragraf:ReuseAnswersDays", reuseAnswers ? "7" : "0");
             web.UseSetting("Anthropic:ApiKey", "not-used");
             web.UseSetting("OpenAI:ApiKey", "not-used");
             web.ConfigureTestServices(services =>
@@ -175,6 +180,87 @@ public sealed class ApiTests(ApiFixture fixture) : IClassFixture<ApiFixture>
         Assert.DoesNotContain("długotrwałym", after.GetProperty("text").GetString());
         Assert.Equal(2, after.GetProperty("versions").GetArrayLength());
         Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync("/api/articles/999", Ct)).StatusCode);
+    }
+
+    private AskLog Log() => new(ChunkStore.CreateDataSource(fixture.ConnectionString), TimeProvider.System);
+
+    [Fact]
+    public async Task A_repeated_question_gets_the_earlier_answer_free_even_when_the_budget_is_spent()
+    {
+        var model = new ScriptedModel(ScriptedModel.NoticeAnswer());
+        await using var api = fixture.Api(model, dailyBudgetUsd: 0.005m, reuseAnswers: true); // one answer costs 0.006
+        var client = api.CreateClient();
+        var question = $"What notice period does art. 36 give after 7 years? ({Guid.NewGuid():N})";
+
+        var first = await (await Ask(client, question)).Content.ReadFromJsonAsync<JsonElement>(Ct);
+        // Other spacing and case is the same question.
+        var again = await Ask(client, "  " + question.ToUpperInvariant().Replace(" ", "   "));
+        Assert.Equal(HttpStatusCode.OK, again.StatusCode);
+        var second = await again.Content.ReadFromJsonAsync<JsonElement>(Ct);
+
+        Assert.Single(model.Requests);
+        Assert.Equal(first.GetProperty("id").GetGuid(), second.GetProperty("cached_from").GetGuid());
+        Assert.NotEqual(first.GetProperty("id").GetGuid(), second.GetProperty("id").GetGuid());
+        Assert.Equal(0m, second.GetProperty("usage").GetProperty("cost_usd").GetDecimal());
+        Assert.Equal(first.GetProperty("answer").GetString(), second.GetProperty("answer").GetString());
+        Assert.Equal(JsonValueKind.Null, first.GetProperty("cached_from").ValueKind);
+
+        // A new question still meets the spent budget.
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, (await Ask(client, question + " And after 2 years?")).StatusCode);
+    }
+
+    [Fact]
+    public async Task An_answer_that_failed_a_check_is_not_reused()
+    {
+        var bad = new
+        {
+            status = "answered",
+            answer = "The notice period is 3 months.",
+            citations = new[] { new { article = "36", paragraph = "1", quote = "words that are not in the code" } },
+        };
+        var model = new ScriptedModel(bad);
+        await using var api = fixture.Api(model, reuseAnswers: true);
+        var client = api.CreateClient();
+        var question = $"What notice period does art. 36 give? ({Guid.NewGuid():N})";
+        var first = await (await Ask(client, question)).Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.False(first.GetProperty("grounded").GetBoolean());
+        await Ask(client, question);
+        Assert.Equal(2, model.Requests.Count);
+    }
+
+    [Fact]
+    public async Task Every_ask_is_logged_and_a_visitor_can_mark_it_unhelpful()
+    {
+        await using var api = fixture.Api(new ScriptedModel(ScriptedModel.NoticeAnswer()));
+        var client = api.CreateClient();
+        var question = $"What notice period does art. 36 give after 7 years? ({Guid.NewGuid():N})";
+        var body = await (await Ask(client, question)).Content.ReadFromJsonAsync<JsonElement>(Ct);
+        var id = body.GetProperty("id").GetGuid();
+
+        var feedback = await client.PostAsync($"/api/asks/{id}/feedback", Json("""{"helpful":false}"""), Ct);
+        Assert.Equal(HttpStatusCode.NoContent, feedback.StatusCode);
+
+        var entry = (await Log().SinceAsync(DateTimeOffset.UtcNow.AddMinutes(-5), Ct)).Single(e => e.Id == id);
+        Assert.Equal(question, entry.Question);
+        Assert.Equal("answered", entry.Status);
+        Assert.True(entry.Grounded && entry.Cacheable);
+        Assert.Equal(0.006m, entry.CostUsd);
+        Assert.False(entry.Helpful);
+        Assert.Equal(id, JsonDocument.Parse(entry.Response).RootElement.GetProperty("id").GetGuid());
+
+        Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"/api/asks/{Guid.NewGuid()}/feedback", Json("""{"helpful":true}"""), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync($"/api/asks/{id}/feedback", Json("{}"), Ct)).StatusCode);
+    }
+
+    [Fact]
+    public async Task When_the_model_is_down_the_API_answers_503_and_spends_nothing()
+    {
+        var model = new ScriptedModel(new HttpRequestException("529 overloaded"));
+        await using var api = fixture.Api(model);
+        var response = await Ask(api.CreateClient(), "What notice period does art. 36 give after 7 years?");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
+        Assert.Contains("did not answer", problem.GetProperty("detail").GetString());
     }
 
     [Fact]

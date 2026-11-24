@@ -60,6 +60,9 @@
   .amount { display: inline-block; margin: 0 6px 6px 0; padding: 2px 8px; border-radius: 6px; font-size: 13px; background: var(--ok-bg); color: var(--ok); }
   .amount.bad { background: var(--bad-bg); color: var(--bad); }
   .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .feedback { color: var(--muted); font-size: 13px; margin-top: 10px; }
+  .feedback button { font: inherit; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; margin-left: 4px; cursor: pointer; }
+  .feedback button:hover { border-color: var(--accent); }
   footer { grid-column: 1 / -1; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 14px; }
   footer a { color: inherit; }
 </style>
@@ -95,7 +98,8 @@
   </aside>
 
   <footer>
-    General information about the law, not legal advice. Source code, the parser and the eval results:
+    General information about the law, not legal advice. Questions and answers are kept for 30 days to find wrong answers:
+    please do not write names or other personal data. Source code, the parser and the eval results:
     <a href="https://github.com/KirilLukyanenko/paragraf">github.com/KirilLukyanenko/paragraf</a>.
   </footer>
 </main>
@@ -126,7 +130,8 @@ fetch("/api/info").then(r => r.json()).then(info => {
   payrollExamples.forEach(addExample);
 }).catch(() => {});
 const toolNames = { working_time_norm: "Working-time norm", notice_period: "Notice period", overtime_pay: "Overtime pay",
-                    non_compete_compensation: "Non-compete compensation", get_employee_pay: "Pay from the payroll system" };
+                    non_compete_compensation: "Non-compete compensation", deduction_limits: "Deduction limits",
+                    annual_leave: "Annual leave", get_employee_pay: "Pay from the payroll system" };
 const label_ = k => k.replaceAll("_", " ").replace(/at(\d)/, "at $1");
 const sup = { "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "0": "⁰" };
 const unit = n => n.replace(/\^(\w+)/, (_, x) => [...x].map(ch => sup[ch] || ch).join(""));
@@ -192,8 +197,14 @@ $("ask").onsubmit = async e => {
         ${cites ? `<h2>Citations</h2>${cites}` : ""}
         <h2>Articles the model was given</h2><div class="sources">${sources}</div>
         <div class="meta">Law as of ${esc(body.as_of)} · ${esc(body.usage.model)} · ${(body.usage.retrieval_ms / 1000).toFixed(1)} s search,
-          ${(body.usage.answer_ms / 1000).toFixed(1)} s answer · $${body.usage.cost_usd.toFixed(4)}${body.language?.rewritten ? " · the first answer was in another language and was written again" : ""}${body.search_query ? `<br>Search query: ${esc(body.search_query)}` : ""}</div>
+          ${(body.usage.answer_ms / 1000).toFixed(1)} s answer · $${body.usage.cost_usd.toFixed(4)}${body.cached_from ? " · the same question was answered before: this is that answer, without a model call" : ""}${body.language?.rewritten ? " · the first answer was in another language and was written again" : ""}${body.search_query ? `<br>Search query: ${esc(body.search_query)}` : ""}</div>
+        <div class="feedback" id="feedback">Was this answer helpful?<button type="button" data-helpful="true">Yes</button><button type="button" data-helpful="false">No</button></div>
       </div>`;
+    $("feedback").querySelectorAll("button").forEach(b => b.onclick = async () => {
+      const r = await fetch(`/api/asks/${body.id}/feedback`, { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ helpful: b.dataset.helpful === "true" }) }).catch(() => null);
+      $("feedback").textContent = r?.ok ? "Thank you: noted." : "Could not save the mark.";
+    });
     $("result").querySelectorAll("[data-article]").forEach(el => el.onclick = ev => { ev.preventDefault(); showArticle(el.dataset.article); });
     if (body.citations.length) showArticle(body.citations[0].article);
   } catch (err) {

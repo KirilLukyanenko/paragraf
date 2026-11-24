@@ -54,6 +54,8 @@ public static class ParagrafServices
         services.AddSingleton(_ => ChunkStore.CreateDataSource(configuration.GetConnectionString("Paragraf")
             ?? throw new InvalidOperationException("ConnectionStrings:Paragraf is not set.")));
         services.AddSingleton<ChunkStore>();
+        services.AddSingleton(sp => new AskLog(sp.GetRequiredService<Npgsql.NpgsqlDataSource>(), sp.GetService<TimeProvider>() ?? TimeProvider.System,
+            configuration.GetValue("Paragraf:KeepAsksDays", 30)));
 
         services.AddSingleton<IChatClient>(sp =>
         {

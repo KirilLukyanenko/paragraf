@@ -22,6 +22,7 @@ public sealed class ScriptedModel(params object[] answers) : IChatClient
             Requests.Add(messages.ToList());
             answer = answers[Math.Min(_next++, answers.Length - 1)];
         }
+        if (answer is Exception failure) throw failure; // a scripted outage
         return Task.FromResult(new ChatResponse(new ChatMessage(ChatRole.Assistant, JsonSerializer.Serialize(answer)))
         {
             Usage = new UsageDetails { InputTokenCount = 1000, OutputTokenCount = 100 },

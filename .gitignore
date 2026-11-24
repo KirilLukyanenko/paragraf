@@ -480,3 +480,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Visitors' questions from the demo (scripts/demo-asks.ps1): never in the public repository
+evals/feedback/
